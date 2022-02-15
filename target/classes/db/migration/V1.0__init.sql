@@ -1,34 +1,41 @@
 USE `traffic_generator`;
 
-CREATE TABLE IF NOT EXISTS `endpoint`(
-    `id` int(11) NOT NULL AUTO_INCREMENT,
-    `endpoint` varchar(45) NOT NULL,
-    `method` varchar(45) NOT NULL,
-    PRIMARY KEY(`id`)
-);
-
 CREATE TABLE IF NOT EXISTS `test`(
-    `id` int(11) NOT NULL AUTO_INCREMENT,
-    `endpoint_id` int(11) NOT NULL,
+    `id` int NOT NULL AUTO_INCREMENT,
     `name` varchar(45) NOT NULL,
-    `number_of_requests` int(11) NOT NULL,
-    `number_of_users` int(11) NOT NULL,
-    `database_time` bigint(45) NOT NULL,
-    `api_time` bigint(45) NOT NULL,
-    `application_time` bigint(45) NOT NULL,
-    PRIMARY KEY(`id`),
-    FOREIGN KEY(`endpoint_id`) REFERENCES `endpoint`(`id`)
+    `finished` boolean NOT NULL,
+    PRIMARY KEY(`id`)
 );
 
 CREATE TABLE IF NOT EXISTS `cpu_data`(
-    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `id` int NOT NULL AUTO_INCREMENT,
+    `test_id` int NOT NULL,
     `timestamp` bigint(45) NOT NULL,
-    `name` varchar(45) NOT NULL,
     `cpu_usage` double NOT NULL,
-    PRIMARY KEY(`id`)
+    PRIMARY KEY(`id`),
+    FOREIGN KEY(`test_id`) REFERENCES `test`(`id`)
 );
 
-SET FOREIGN_KEY_CHECKS = 0;
-TRUNCATE test;
-TRUNCATE endpoint;
-SET FOREIGN_KEY_CHECKS = 1;
+CREATE TABLE IF NOT EXISTS `test_parameters`(
+    `id` int NOT NULL AUTO_INCREMENT,
+    `test_id` int NOT NULL,
+    `number_of_requests` int NOT NULL,
+    `number_of_users` int NOT NULL,
+    `test_time` int NOT NULL,
+    `time_between_requests` int NOT NULL,
+    PRIMARY KEY(`id`),
+    FOREIGN KEY(`test_id`) REFERENCES `test`(`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `time_data`(
+    `id` int NOT NULL AUTO_INCREMENT,
+    `test_id` int NOT NULL,
+    `database_time` bigint(45) NOT NULL,
+    `api_time` bigint(45) NOT NULL,
+    `application_time` bigint(45) NOT NULL,
+    `timestamp` bigint(45) NOT NULL,
+    `endpoint_url` varchar(45),
+    `method` varchar(45),
+    PRIMARY KEY(`id`),
+    FOREIGN KEY(`test_id`) REFERENCES `test`(`id`)
+);

@@ -2,14 +2,14 @@ package com.raphau.trafficgenerator.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.raphau.trafficgenerator.dao.CpuDataRepository;
-import com.raphau.trafficgenerator.dao.EndpointRepository;
+import com.raphau.trafficgenerator.dao.TestParametersRepository;
 import com.raphau.trafficgenerator.dao.TestRepository;
 import com.raphau.trafficgenerator.dto.ClientTestDTO;
 import com.raphau.trafficgenerator.dto.RunTestDTO;
 import com.raphau.trafficgenerator.dto.UserLogin;
 import com.raphau.trafficgenerator.entity.CpuData;
-import com.raphau.trafficgenerator.entity.Endpoint;
 import com.raphau.trafficgenerator.entity.Test;
+import com.raphau.trafficgenerator.entity.TestParameters;
 import com.raphau.trafficgenerator.service.AsyncService;
 import org.json.JSONException;
 import org.slf4j.Logger;
@@ -38,15 +38,16 @@ public class TestController {
     private static Logger log = LoggerFactory.getLogger(TestController.class);
     private RunTestDTO runTestDTO = new RunTestDTO(20, 50, 0.9, 0.45, 0.45, 0.05, 0.05, 0.1, 0.33, 0.33, 0.34, 1, 120000, 20);
     private final OperatingSystemMXBean  bean = (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
+    public static int processNumber = 0;
 
     @Autowired
     private AsyncService asyncService;
 
     @Autowired
-    private EndpointRepository endpointRepository;
-
-    @Autowired
     private TestRepository testRepository;
+    
+    @Autowired
+    private TestParametersRepository testParametersRepository;
 
     @Autowired
     private CpuDataRepository cpuDataRepository;
@@ -59,15 +60,15 @@ public class TestController {
         if(testRepository.findAllByName(name).length != 0){
             throw new Exception();
         }
+        
+        Test test = new Test(0, name, false);
+        TestParameters testParameters = new TestParameters(runTestDTO);
+        testParametersRepository.save(testParameters);
+        test.setTestParameters(testParameters);
+        testRepository.save(test);
 
-        Map<String, Integer> numberOfRequests = new HashMap<>();
-        Map<String, Long> databaseTime = new HashMap<>();
-        Map<String, Long> applicationTime = new HashMap<>();
-        Map<String, Long> apiTime = new HashMap<>();
         List<UserLogin> userLogins = new ArrayList<>();
-
         asyncService.setEndWork(false);
-        List<ClientTestDTO> clientTestDTOList = new ArrayList<>();
 
         for(int i = 0; i < runTestDTO.getNumberOfUsers(); i++){
             asyncService.postRegistration(""+i);
@@ -76,13 +77,13 @@ public class TestController {
 
         for(int i = 0; i < runTestDTO.getNumberOfUsers(); i++){
             Thread.sleep(1000);
-            asyncService.runTests(userLogins.get(i), clientTestDTOList, runTestDTO);
+            asyncService.runTests(userLogins.get(i), runTestDTO);
+            processNumber++;
         }
-//        MBeanServer mbs    = ManagementFactory.getPlatformMBeanServer();
-//        ObjectName objectName    = ObjectName.getInstance("java.lang:type=OperatingSystem");
+        
         long time = runTestDTO.getTestTime();
         int x = 0;
-        while(clientTestDTOList.size() < runTestDTO.getNumberOfUsers()){
+        while(processNumber > 0){
             x--;
             if(x<=0) {
 
@@ -96,8 +97,7 @@ public class TestController {
                         } catch (Exception e) {
                             value = e;
                         }
-
-                        CpuData cpuData = new CpuData(0, name, System.currentTimeMillis(), (Double) value);
+                        CpuData cpuData = new CpuData(0, test, System.currentTimeMillis(), (Double) value);
                         cpuDataRepository.save(cpuData);
                     }
                 }
@@ -114,52 +114,13 @@ public class TestController {
         };
         log.info("Koniec");
 
-        System.out.println(clientTestDTOList.size());
-
-        for(ClientTestDTO clientTestDTO: clientTestDTOList){
-            for(Map.Entry<String, Integer> entry : clientTestDTO.getNumberOfRequests().entrySet()){
-                Integer number = numberOfRequests.get(entry.getKey());
-                if(number == null){
-                    numberOfRequests.put(entry.getKey(), entry.getValue());
-                    applicationTime.put(entry.getKey(), clientTestDTO.getSummaryEndpointTime()
-                            .get(entry.getKey()));
-                    databaseTime.put(entry.getKey(), clientTestDTO.getSummaryEndpointDatabaseTime()
-                            .get(entry.getKey()));
-                    apiTime.put(entry.getKey(), clientTestDTO.getSummaryApiTime().get(entry.getKey()));
-                } else {
-                    numberOfRequests.put(entry.getKey(), entry.getValue() + numberOfRequests.get(entry
-                            .getKey()));
-                    applicationTime.put(entry.getKey(), clientTestDTO.getSummaryEndpointTime().get(entry
-                            .getKey()) + applicationTime.get(entry.getKey()));
-                    databaseTime.put(entry.getKey(), clientTestDTO.getSummaryEndpointDatabaseTime().get(entry
-                            .getKey()) + databaseTime.get(entry.getKey()));
-                    apiTime.put(entry.getKey(), clientTestDTO.getSummaryApiTime().get(entry.getKey())
-                            + apiTime.get(entry.getKey()));
-                }
-            }
-        }
-
-        for(Map.Entry<String, Integer> entry : numberOfRequests.entrySet()){
-            int numberOR = entry.getValue();
-            long averageAppTime = applicationTime.get(entry.getKey()) / numberOR;
-            long averageDBTime = databaseTime.get(entry.getKey()) / numberOR;
-            long averageApiTime = apiTime.get(entry.getKey()) / numberOR;
-            Endpoint endpoint = endpointRepository.findByEndpoint(entry.getKey()).get();
-            Test test = new Test(0, endpoint, name, numberOR,
-                    (int) runTestDTO.getNumberOfUsers(), averageDBTime, averageApiTime, averageAppTime);
-            testRepository.save(test);
-        }
-
     }
 
-    @GetMapping("/getTest")
+    @GetMapping("/test")
     public ResponseEntity<?> getTest(){
-        List<Test> tests = testRepository.findAll();
-        List<CpuData> cpuData = cpuDataRepository.findAll();
-        Map<String, Object> temp = new HashMap<>();
-        temp.put("tests", tests);
-        temp.put("cpuData", cpuData);
-        return ResponseEntity.ok(temp);
+    	List<Test> tests = testRepository.findAll();
+    	System.out.println(tests.size());
+        return ResponseEntity.ok(tests);
     }
 
     @PostMapping("/cleanDB")

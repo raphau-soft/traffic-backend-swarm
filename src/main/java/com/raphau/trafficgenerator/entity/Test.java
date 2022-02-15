@@ -2,126 +2,90 @@ package com.raphau.trafficgenerator.entity;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.util.List;
 
 @Entity
 @Table(name="test", schema="traffic_generator")
-public class Test implements Serializable {
+public class Test {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="id")
     private int id;
 
-    @ManyToOne(targetEntity = Endpoint.class, fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "endpoint_id", nullable = false)
-    private Endpoint endpoint;
+    @OneToOne(mappedBy = "test")
+    private TestParameters testParameters;
+    
+    @OneToMany(mappedBy = "test")
+    private List<CpuData> cpuDatas;
+    
+    @OneToMany(mappedBy = "test")
+    private List<TimeData> timeDatas;
 
     @Column(name = "name")
     private String name;
 
-    @Column(name = "number_of_requests")
-    private int numberOfRequests;
-
-    @Column(name = "number_of_users")
-    private int numberOfUsers;
-
-    @Column(name = "database_time")
-    private long databaseTime;
-
-    @Column(name = "api_time")
-    private long apiTime;
-
-    @Column(name = "application_time")
-    private long applicationTime;
+    @Column(name = "finished")
+    private boolean finished;
 
     public Test() {
     }
 
-    public Test(int id, Endpoint endpoint, String name, int numberOfRequests, int numberOfUsers, long databaseTime, long apiTime, long applicationTime) {
-        this.id = id;
-        this.endpoint = endpoint;
-        this.name = name;
-        this.numberOfRequests = numberOfRequests;
-        this.numberOfUsers = numberOfUsers;
-        this.databaseTime = databaseTime;
-        this.apiTime = apiTime;
-        this.applicationTime = applicationTime;
-    }
+	public Test(int id, String name, boolean finished) {
+		super();
+		this.id = id;
+		this.name = name;
+		this.finished = finished;
+	}
 
-    @Override
-    public String toString() {
-        return "Test{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", numberOfRequests=" + numberOfRequests +
-                ", numberOfUsers=" + numberOfUsers +
-                ", databaseTime=" + databaseTime +
-                ", apiTime=" + apiTime +
-                ", applicationTime=" + applicationTime +
-                '}';
-    }
+	public int getId() {
+		return id;
+	}
 
-    public int getId() {
-        return id;
-    }
+	public void setId(int id) {
+		this.id = id;
+	}
 
-    public void setId(int id) {
-        this.id = id;
-    }
+	public TestParameters getTestParameters() {
+		return testParameters;
+	}
 
-    public Endpoint getEndpoint() {
-        return endpoint;
-    }
+	public void setTestParameters(TestParameters testParameters) {
+		this.testParameters = testParameters;
+	}
 
-    public void setEndpoint(Endpoint endpoint) {
-        this.endpoint = endpoint;
-    }
+	public List<CpuData> getCpuDatas() {
+		return cpuDatas;
+	}
 
-    public String getName() {
-        return name;
-    }
+	public void setCpuDatas(List<CpuData> cpuDatas) {
+		this.cpuDatas = cpuDatas;
+	}
 
-    public void setName(String name) {
-        this.name = name;
-    }
+	public List<TimeData> getTimeDatas() {
+		return timeDatas;
+	}
 
-    public int getNumberOfRequests() {
-        return numberOfRequests;
-    }
+	public void setTimeDatas(List<TimeData> timeDatas) {
+		this.timeDatas = timeDatas;
+	}
 
-    public void setNumberOfRequests(int numberOfRequests) {
-        this.numberOfRequests = numberOfRequests;
-    }
+	public String getName() {
+		return name;
+	}
 
-    public int getNumberOfUsers() {
-        return numberOfUsers;
-    }
+	public void setName(String name) {
+		this.name = name;
+	}
 
-    public void setNumberOfUsers(int numberOfUsers) {
-        this.numberOfUsers = numberOfUsers;
-    }
+	public boolean isFinished() {
+		return finished;
+	}
 
-    public long getDatabaseTime() {
-        return databaseTime;
-    }
+	public void setFinished(boolean finished) {
+		this.finished = finished;
+	}
 
-    public void setDatabaseTime(long databaseTime) {
-        this.databaseTime = databaseTime;
-    }
 
-    public long getApiTime() {
-        return apiTime;
-    }
-
-    public void setApiTime(long apiTime) {
-        this.apiTime = apiTime;
-    }
-
-    public long getApplicationTime() {
-        return applicationTime;
-    }
-
-    public void setApplicationTime(long applicationTime) {
-        this.applicationTime = applicationTime;
-    }
+    
 }

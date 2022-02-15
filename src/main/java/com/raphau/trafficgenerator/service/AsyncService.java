@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
+import com.raphau.trafficgenerator.controller.TestController;
 import com.raphau.trafficgenerator.dto.*;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -27,6 +28,7 @@ public class AsyncService {
 
     private static Logger log = LoggerFactory.getLogger(AsyncService.class);
     private HttpHeaders headers;
+    private final Object lock = new Object();
 
     // playing on stock strategy
     private final int RAND_EXPENSIVE_ONE_COMP = 0;
@@ -63,8 +65,7 @@ public class AsyncService {
     }
 
     @Async("asyncExecutor")
-    public void runTests(UserLogin userLogin, List<ClientTestDTO> clientTestDTOList,
-                         RunTestDTO runTestDTO) throws JSONException,
+    public void runTests(UserLogin userLogin, RunTestDTO runTestDTO) throws JSONException,
             JsonProcessingException, InterruptedException {
         int requestsNumber = 0;
         timeBetween = runTestDTO.getTimeBetweenRequests();
@@ -75,40 +76,46 @@ public class AsyncService {
         jsonObject = new JSONObject(resources);
         Type stockListType = new TypeToken<ArrayList<Stock>>(){}.getType();
         List<Stock> stocks = gson.fromJson(jsonObject.get("stock").toString(), stockListType);
-        //
         if(stocks.isEmpty())
             createCompany(userLogin.getJwt(), clientTestDTO);
-        double random = Math.random();
-        if (random <= runTestDTO.getStockPlay()) {
+        Random randomGenerator = new Random();
+        int randomStrategy = randomGenerator.nextInt() % 3;
+        if (randomStrategy == 0) {
+        	boolean buy = true;
             for(;;) {
-                random = Math.random();
-                if (random <= runTestDTO.getCreateSellOffer()) {
-                    strategyAddSellOffer(userLogin.getJwt(),
-                            runTestDTO.getStrategy(), clientTestDTO);
-                } else if (random > runTestDTO.getCreateSellOffer()
-                        && random <= runTestDTO.getCreateBuyOffer()
-                        + runTestDTO.getCreateSellOffer()) {
-                    strategyAddBuyOffer(userLogin.getJwt(),
-                            runTestDTO.getStrategy(), clientTestDTO);
-                } else if (random > runTestDTO.getCreateBuyOffer()
-                        + runTestDTO.getCreateSellOffer() &&
-                        random <= runTestDTO.getCreateBuyOffer()
-                                + runTestDTO.getCreateSellOffer() +
-                                runTestDTO.getDeleteSellOffer()) {
-                    deleteSellOffer(userLogin.getJwt(), clientTestDTO);
-                } else {
-                    deleteBuyOffer(userLogin.getJwt(), clientTestDTO);
-                }
+            	if(buy)
+            		sellAllStocks(userLogin.getJwt(), clientTestDTO);
+            	else
+            		buyStocksUntilHaveMoney(userLogin.getJwt(), clientTestDTO);              
                 requestsNumber++;
+                buy = !buy;
                 if(endWork || requestsNumber >= runTestDTO.getRequestsNumber()){
-                    clientTestDTOList.add(clientTestDTO);
+                	synchronized (lock) {
+                		TestController.processNumber--;
+                	}
                     return;
                 }
                 Thread.sleep(runTestDTO.getTimeBetweenRequests());
             }
+        } else if (randomStrategy == 1) {
+        	boolean buy = true;
+        	if(buy) // TODO
+        		sellOneStock(userLogin.getJwt(), clientTestDTO);
+        	else
+        		buyOneStock(userLogin.getJwt(), clientTestDTO);              
+            requestsNumber++;
+            buy = !buy;
+            if(endWork || requestsNumber >= runTestDTO.getRequestsNumber()){
+            	synchronized (lock) {
+            		TestController.processNumber--;
+            	}
+                return;
+            }
+            Thread.sleep(runTestDTO.getTimeBetweenRequests());
         } else {
+        	// przeglądanie
             for(;;) {
-                random = Math.random();
+                double random = Math.random();
                 if(random <= runTestDTO.getDataCheck()){
                     getBuyOffers(userLogin.getJwt(), clientTestDTO);
                 } else if(random > runTestDTO.getCheckBuyOffers()
@@ -120,14 +127,152 @@ public class AsyncService {
                 }
                 requestsNumber++;
                 if(endWork || requestsNumber >= runTestDTO.getRequestsNumber()){
-                    clientTestDTOList.add(clientTestDTO);
+                	synchronized (lock) {
+                		TestController.processNumber--;
+                	}
                     return;
                 }
                 Thread.sleep(runTestDTO.getTimeBetweenRequests());
             }
         }
     }
+    
+	private void sellOneStock(String jwt, ClientTestDTO clientTestDTO) throws JSONException, JsonProcessingException, InterruptedException {
+	    Gson gson = new Gson();
+	    String resources = getResources(jwt, clientTestDTO);
+	    if(resources == null) return;
+	    JSONObject jsonObject = new JSONObject(resources);
+	    Type stockListType = new TypeToken<ArrayList<Stock>>(){}.getType();
+	    List<Stock> stocks = gson.fromJson(jsonObject.get("stock").toString(), stockListType);
+	    if(stocks.size() <= 0) return;
+	    
+	    int randomStock = (int) Math.random() * 100 % stocks.size();
+	    Stock stock = stocks.get(randomStock);
+	    int stockAmountToSell = stock.getAmount();
+	    Company company = stock.getCompany();
+	    String stockR = getStockRates(jwt, clientTestDTO);
+	    if(stockR == null) return;
+	    jsonObject = new JSONObject(stockR);
+	    Type stockRateListType = new TypeToken<ArrayList<StockRate>>(){}.getType();
+	    List<StockRate> stockRates = gson.fromJson(jsonObject.get("stockRate")
+	            .toString(), stockRateListType);
+	    StockRate stockRateTemp = new StockRate();
+	    stockRateTemp.setCompany(company);
+	    int stockRateNum = stockRates.indexOf(stockRateTemp);
+	    StockRate stockRate = stockRates.get(stockRateNum);
+	    double rate = stockRate.getRate();
+	    double price = round((Math.abs(new Random().nextDouble()) % (rate * 0.3)
+	            + rate * 0.8), 2);
+	    createSellOffer(jwt, company.getId(), stockAmountToSell, price, clientTestDTO);
+	    if(endWork) return;
+	    Thread.sleep(timeBetween);
+	    if(endWork) return;
+	}
 
+    private void sellAllStocks(String jwt, ClientTestDTO clientTestDTO) throws JSONException, JsonProcessingException, InterruptedException {
+        Gson gson = new Gson();
+        String resources = getResources(jwt, clientTestDTO);
+        if(resources == null) return;
+        JSONObject jsonObject = new JSONObject(resources);
+        Type stockListType = new TypeToken<ArrayList<Stock>>(){}.getType();
+        List<Stock> stocks = gson.fromJson(jsonObject.get("stock").toString(), stockListType);
+        if(stocks.size() <= 0) return;
+        
+        for(Stock stock: stocks) {
+        	int stockAmountToSell = stock.getAmount();
+        	Company company = stock.getCompany();
+        	String stockR = getStockRates(jwt, clientTestDTO);
+            if(stockR == null) break;
+            jsonObject = new JSONObject(stockR);
+            Type stockRateListType = new TypeToken<ArrayList<StockRate>>(){}.getType();
+            List<StockRate> stockRates = gson.fromJson(jsonObject.get("stockRate")
+                    .toString(), stockRateListType);
+            StockRate stockRateTemp = new StockRate();
+            stockRateTemp.setCompany(company);
+            int stockRateNum = stockRates.indexOf(stockRateTemp);
+            StockRate stockRate = stockRates.get(stockRateNum);
+            double rate = stockRate.getRate();
+            double price = round((Math.abs(new Random().nextDouble()) % (rate * 0.3)
+                    + rate * 0.8), 2);
+            createSellOffer(jwt, company.getId(), stockAmountToSell, price, clientTestDTO);
+            if(endWork) return;
+            Thread.sleep(timeBetween);
+            if(endWork) return;
+        }
+    }
+    
+    private void buyOneStock(String jwt, ClientTestDTO clientTestDTO) throws JSONException, JsonProcessingException, InterruptedException {
+        Gson gson = new Gson();
+        String temp = getUser(jwt, clientTestDTO);
+        if(temp == null) return;
+        JSONObject jsonObject = new JSONObject(temp);
+        User user = gson.fromJson(jsonObject.get("user").toString(), User.class);
+        double money = user.getMoney();
+        jsonObject = new JSONObject(getCompanies(jwt, clientTestDTO));
+        Type companyListType = new TypeToken<ArrayList<Company>>(){}.getType();
+        List<Company> companies = gson.fromJson(jsonObject.get("company").toString(), companyListType);
+        double price;
+        int amount;
+        String stockR = getStockRates(jwt, clientTestDTO);
+        if(stockR == null) return;
+        jsonObject = new JSONObject(stockR);
+        Type stockRateListType = new TypeToken<ArrayList<StockRate>>(){}.getType();
+        List<StockRate> stockRates = gson.fromJson(jsonObject.get("stockRate")
+                .toString(), stockRateListType);
+        StockRate stockRateTemp = new StockRate();
+        int randomCompany = (int) Math.random() * 100 % companies.size();
+        Company company = companies.get(randomCompany);
+	    stockRateTemp.setCompany(company);
+	    int stockRateNum = stockRates.indexOf(stockRateTemp);
+	    StockRate stockRate = stockRates.get(stockRateNum);
+	    double rate = stockRate.getRate();
+	    price = round((Math.abs(new Random().nextDouble()) % (rate * 0.3) + rate * 0.9), 2);
+	    amount = (int) Math.round(Math.random() * 100.f % (money / price / 10));
+	    createBuyOffer(jwt, company.getId(), amount, price, clientTestDTO);
+	    if(endWork) return;
+	    Thread.sleep(timeBetween);
+	    if(endWork) return;
+    }
+
+    private void buyStocksUntilHaveMoney(String jwt, ClientTestDTO clientTestDTO) throws JSONException, JsonProcessingException, InterruptedException {
+        Gson gson = new Gson();
+        String temp = getUser(jwt, clientTestDTO);
+        if(temp == null) return;
+        JSONObject jsonObject = new JSONObject(temp);
+        User user = gson.fromJson(jsonObject.get("user").toString(), User.class);
+        double money = user.getMoney();
+        jsonObject = new JSONObject(getCompanies(jwt, clientTestDTO));
+        Type companyListType = new TypeToken<ArrayList<Company>>(){}.getType();
+        List<Company> companies = gson.fromJson(jsonObject.get("company").toString(), companyListType);
+        double price;
+        int amount;
+        String stockR = getStockRates(jwt, clientTestDTO);
+        if(stockR == null) return;
+        jsonObject = new JSONObject(stockR);
+        Type stockRateListType = new TypeToken<ArrayList<StockRate>>(){}.getType();
+        List<StockRate> stockRates = gson.fromJson(jsonObject.get("stockRate")
+                .toString(), stockRateListType);
+        StockRate stockRateTemp = new StockRate();
+        mainLoop:
+        for(;;) {
+	        for(Company company: companies) {
+	        	stockRateTemp.setCompany(company);
+	            int stockRateNum = stockRates.indexOf(stockRateTemp);
+	            StockRate stockRate = stockRates.get(stockRateNum);
+	            double rate = stockRate.getRate();
+	            price = round((Math.abs(new Random().nextDouble()) % (rate * 0.3) + rate * 0.9), 2);
+	            amount = (int) Math.round(Math.random() * 100.f % (money / price / 10));
+	            if(amount == 0) break mainLoop;
+	            createBuyOffer(jwt, company.getId(), amount, price, clientTestDTO);
+	            money -= price*amount;
+	            if(endWork) return;
+	            Thread.sleep(timeBetween);
+	            if(endWork) return;
+	        }
+	    }
+    }
+
+   
     public void deleteSellOffer(String jwt, ClientTestDTO clientTestDTO) throws JSONException {
         JSONObject jsonObject;
         Gson gson = new Gson();

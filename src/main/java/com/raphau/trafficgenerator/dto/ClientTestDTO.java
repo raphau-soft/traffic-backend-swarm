@@ -1,6 +1,5 @@
 package com.raphau.trafficgenerator.dto;
 
-import com.raphau.trafficgenerator.entity.Endpoint;
 import com.raphau.trafficgenerator.service.AsyncService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

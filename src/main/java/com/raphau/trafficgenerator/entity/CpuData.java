@@ -1,20 +1,24 @@
 package com.raphau.trafficgenerator.entity;
 
 import javax.persistence.*;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import java.io.Serializable;
 
 @Entity
 @Table(name="cpu_data", schema="traffic_generator")
-public class CpuData implements Serializable {
+public class CpuData {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="id")
     private int id;
 
-
-    @Column(name = "name")
-    private String name;
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "test_id", referencedColumnName = "id")
+    @JsonBackReference
+    private Test test;
 
     @Column(name = "timestamp")
     private long timestamp;
@@ -25,17 +29,55 @@ public class CpuData implements Serializable {
     public CpuData() {
     }
 
-    @Override
-    public String toString() {
-        return "CpuData{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", timestamp=" + timestamp +
-                ", cpuUsage=" + cpuUsage +
-                '}';
-    }
 
-    public Double getCpuUsage() {
+
+    public CpuData(int id, Test test, long timestamp, Double cpuUsage) {
+		super();
+		this.id = id;
+		this.test = test;
+		this.timestamp = timestamp;
+		this.cpuUsage = cpuUsage;
+	}
+
+
+
+	public int getId() {
+		return id;
+	}
+
+
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+
+
+	public Test getTest() {
+		return test;
+	}
+
+
+
+	public void setTest(Test test) {
+		this.test = test;
+	}
+
+
+
+	public long getTimestamp() {
+		return timestamp;
+	}
+
+
+
+	public void setTimestamp(long timestamp) {
+		this.timestamp = timestamp;
+	}
+
+
+
+	public Double getCpuUsage() {
         return cpuUsage;
     }
 
@@ -43,35 +85,5 @@ public class CpuData implements Serializable {
         this.cpuUsage = cpuUsage;
     }
 
-    public CpuData(int id, String name, long timestamp, Double cpuUsage) {
-        this.id = id;
-        this.name = name;
-        this.timestamp = timestamp;
-        this.cpuUsage = cpuUsage;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public long getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
-    }
 
 }

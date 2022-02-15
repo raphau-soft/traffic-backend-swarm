@@ -2,8 +2,8 @@ package com.raphau.trafficgenerator.dto;
 
 public class RunTestDTO {
 
-    private long timeBetweenRequests;
-    private long numberOfUsers;
+    private int timeBetweenRequests;
+    private int numberOfUsers;
     private double stockPlay;
     private double createBuyOffer;
     private double createSellOffer;
@@ -14,17 +14,17 @@ public class RunTestDTO {
     private double checkSellOffers;
     private double checkUserData;
     private int strategy;
-    private long testTime;
+    private int testTime;
     private int requestsNumber;
 
     public RunTestDTO() {
     }
 
-    public RunTestDTO(long timeBetweenRequests, long numberOfUsers, double stockPlay,
+    public RunTestDTO(int timeBetweenRequests, int numberOfUsers, double stockPlay,
                       double createBuyOffer, double createSellOffer, double deleteSellOffer,
                       double deleteBuyOffer, double dataCheck,
                       double checkBuyOffers, double checkSellOffers, double checkUserData,
-                      int strategy, long testTime, int requestsNumber) {
+                      int strategy, int testTime, int requestsNumber) {
         this.timeBetweenRequests = timeBetweenRequests;
         this.numberOfUsers = numberOfUsers;
         this.stockPlay = stockPlay;
@@ -41,11 +41,11 @@ public class RunTestDTO {
         this.requestsNumber = requestsNumber;
     }
 
-    public long getTestTime() {
+    public int getTestTime() {
         return testTime;
     }
 
-    public void setTestTime(long testTime) {
+    public void setTestTime(int testTime) {
         this.testTime = testTime;
     }
 
@@ -57,19 +57,19 @@ public class RunTestDTO {
         this.requestsNumber = requestsNumber;
     }
 
-    public long getTimeBetweenRequests() {
+    public int getTimeBetweenRequests() {
         return timeBetweenRequests;
     }
 
-    public void setTimeBetweenRequests(long timeBetweenRequests) {
+    public void setTimeBetweenRequests(int timeBetweenRequests) {
         this.timeBetweenRequests = timeBetweenRequests;
     }
 
-    public long getNumberOfUsers() {
+    public int getNumberOfUsers() {
         return numberOfUsers;
     }
 
-    public void setNumberOfUsers(long numberOfUsers) {
+    public void setNumberOfUsers(int numberOfUsers) {
         this.numberOfUsers = numberOfUsers;
     }
 
