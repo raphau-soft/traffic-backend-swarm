@@ -115,4 +115,15 @@ public class TestParameters {
 		this.time_between_requests = time_between_requests;
 	}
 
+	@Override
+	public String toString() {
+		return "TestParameters{" +
+				"id=" + id +
+				", test=" + test +
+				", number_of_requests=" + number_of_requests +
+				", number_of_users=" + number_of_users +
+				", test_time=" + test_time +
+				", time_between_requests=" + time_between_requests +
+				'}';
+	}
 }

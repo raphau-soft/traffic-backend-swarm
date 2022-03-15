@@ -1,7 +1,6 @@
 package com.raphau.trafficgenerator.entity;
 
 import javax.persistence.*;
-import java.io.Serializable;
 import java.util.List;
 
 @Entity
@@ -17,10 +16,10 @@ public class Test {
     private TestParameters testParameters;
     
     @OneToMany(mappedBy = "test")
-    private List<CpuData> cpuDatas;
+    private List<TrafficGeneratorCpuData> cpuDatas;
     
     @OneToMany(mappedBy = "test")
-    private List<TimeData> timeDatas;
+    private List<TrafficGeneratorTimeData> timeDatas;
 
     @Column(name = "name")
     private String name;
@@ -54,19 +53,19 @@ public class Test {
 		this.testParameters = testParameters;
 	}
 
-	public List<CpuData> getCpuDatas() {
+	public List<TrafficGeneratorCpuData> getCpuDatas() {
 		return cpuDatas;
 	}
 
-	public void setCpuDatas(List<CpuData> cpuDatas) {
+	public void setCpuDatas(List<TrafficGeneratorCpuData> cpuDatas) {
 		this.cpuDatas = cpuDatas;
 	}
 
-	public List<TimeData> getTimeDatas() {
+	public List<TrafficGeneratorTimeData> getTimeDatas() {
 		return timeDatas;
 	}
 
-	public void setTimeDatas(List<TimeData> timeDatas) {
+	public void setTimeDatas(List<TrafficGeneratorTimeData> timeDatas) {
 		this.timeDatas = timeDatas;
 	}
 
@@ -86,6 +85,12 @@ public class Test {
 		this.finished = finished;
 	}
 
-
-    
+	@Override
+	public String toString() {
+		return "Test{" +
+				"id=" + id +
+				", name='" + name + '\'' +
+				", finished=" + finished +
+				'}';
+	}
 }

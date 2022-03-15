@@ -78,8 +78,7 @@ public class StockRate {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        StockRate stockRate = (StockRate) o;
-        return Objects.equals(company, stockRate.company);
+        return company.equals(((StockRate) o).getCompany());
     }
 
     @Override

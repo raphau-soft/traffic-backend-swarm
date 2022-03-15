@@ -2,15 +2,19 @@ package com.raphau.trafficgenerator.dto;
 
 public class TestDetailsDTO {
 
+    private String action;
     private long databaseTime;
     private long applicationTime;
 
     public TestDetailsDTO() {
     }
 
-    public TestDetailsDTO(long databaseTime, long applicationTime) {
-        this.databaseTime = databaseTime;
-        this.applicationTime = applicationTime;
+    public String getAction() {
+        return action;
+    }
+
+    public void setAction(String action) {
+        this.action = action;
     }
 
     public long getDatabaseTime() {
@@ -32,7 +36,8 @@ public class TestDetailsDTO {
     @Override
     public String toString() {
         return "TestDetailsDTO{" +
-                "databaseTime=" + databaseTime +
+                "action='" + action + '\'' +
+                ", databaseTime=" + databaseTime +
                 ", applicationTime=" + applicationTime +
                 '}';
     }
