@@ -36,6 +36,7 @@ public class RunTestService {
     public static Semaphore register;
     public static boolean testRunning = false;
     public static TestDTO testDTO;
+    public static int registered;
 
     @Autowired
     private AsyncService asyncService;
@@ -60,6 +61,7 @@ public class RunTestService {
 
     public void asyncTest() throws Exception {
         log.info("Test is starting");
+        registered = 0;
         Test test = new Test(0, generateTestName(), System.currentTimeMillis(), null, false);
         TestParameters testParameters = new TestParameters(runTestDTO);
         testRepository.save(test);
@@ -85,6 +87,12 @@ public class RunTestService {
             asyncService.postRegistration(""+i);
         }
 
+        log.info("Waiting for all user's to register, users: " + runTestDTO.getNumberOfUsers() + " registered: " + registered);
+        while(registered < runTestDTO.getNumberOfUsers()) {
+            Thread.sleep(3000);
+            log.info("Waiting for all user's to register, users: " + runTestDTO.getNumberOfUsers() + " registered: " + registered);
+        }
+
         asyncService.setStockData(objects);
         asyncService.setUsersAndCompanies(users);
         AsyncService.semaphores = semaphores;
@@ -92,7 +100,6 @@ public class RunTestService {
         for(int i = 1; i <= runTestDTO.getNumberOfUsers(); i++){
             asyncService.runTests("" + i, runTestDTO);
             processNumber++;
-            log.info(processNumber + "");
         }
         testRunning = true;
     }

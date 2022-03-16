@@ -270,6 +270,11 @@ public class AsyncConfiguration {
         return new CachingConnectionFactory("rabbitmq");
     }
 
+//    @Bean
+//    public ConnectionFactory connectionFactory() {
+//        return new CachingConnectionFactory("localhost");
+//    }
+
     @Bean
     public RabbitAdmin amqpAdmin() {
         return new RabbitAdmin(connectionFactory());

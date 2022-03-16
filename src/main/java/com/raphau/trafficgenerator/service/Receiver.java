@@ -77,6 +77,7 @@ public class Receiver {
 
     @RabbitListener(queues = "register-response")
     public void receiveRegisterMessage(String flag) {
+        RunTestService.registered++;
         RunTestService.register.release();
     }
 

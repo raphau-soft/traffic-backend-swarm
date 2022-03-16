@@ -72,12 +72,10 @@ public class AsyncService {
         List<Stock> stocks = gson.fromJson(jsonObject.get("stock").toString(), stockListType);
         stockData.set(user, null);
         if (stocks.isEmpty()){
-            if(new Random().nextInt() % 2 == 0){
-                createCompany(username);
-            }
+            createCompany(username);
         }
         Random randomGenerator = new Random();
-        int randomStrategy = randomGenerator.nextInt() % 2;
+        int randomStrategy = randomGenerator.nextInt() % 3;
         if (randomStrategy == 0) {
             boolean buy = true;
             for (; ; ) {
@@ -92,6 +90,7 @@ public class AsyncService {
                 if (endWork || requestsNumber >= runTestDTO.getRequestsNumber()) {
                     synchronized (lock) {
                         RunTestService.processNumber--;
+                        log.info(username + " ending, process number: " + RunTestService.processNumber);
                     }
                     return;
                 }
@@ -112,6 +111,7 @@ public class AsyncService {
                 if (endWork || requestsNumber >= runTestDTO.getRequestsNumber()) {
                     synchronized (lock) {
                         RunTestService.processNumber--;
+                        log.info(username + " ending, process number: " + RunTestService.processNumber);
                     }
                     return;
                 }
@@ -132,6 +132,7 @@ public class AsyncService {
                 if (endWork || requestsNumber >= runTestDTO.getRequestsNumber()) {
                     synchronized (lock) {
                         RunTestService.processNumber--;
+                        log.info(username + " ending, process number: " + RunTestService.processNumber);
                     }
                     return;
                 }
