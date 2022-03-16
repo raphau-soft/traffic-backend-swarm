@@ -243,6 +243,7 @@ public class AsyncService {
         Type stockRateListType = new TypeToken<ArrayList<StockRate>>() {}.getType();
         List<StockRate> stockRates = gson.fromJson(jsonObject.get("stockRates").toString(), stockRateListType);
         StockRate stockRateTemp = new StockRate();
+        if(companies.size() == 0) return;
         int randomCompany = (int) (Math.random() * 100.0 % companies.size());
         Company company = companies.get(randomCompany);
         stockRateTemp.setCompany(company);
