@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Traffic generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css" integrity="sha384-5sAR7xN1Nv6T6+dT2mhtzEpVJvfS3NScPQTrOxhwjIuvcA67KV2R5Jz6kr4abQsz" crossorigin="anonymous">
+  <link rel="stylesheet" href="../css/shards.min.css">
+  <script>
+    function rowClicked(value) {
+      location.href = "/test?id=" + value;
+    }
+  </script>
+</head>
+<body>
+<div th:switch="${runTestDTO}" class="container my-5">
+  <div class="row">
+    <div class="col-md-12">
+      <h2 th:case="null">Test is not configured</h2>
+      <div th:case="*">
+        <h2 class="my-5">Test configuration</h2>
+        <table class="table table-striped table-responsive-md">
+          <thead>
+          <tr>
+            <th>Time between requests (ms)</th>
+            <th>Number of users</th>
+            <th>Number of requests</th>
+            <th>Time of test (s)</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr>
+            <td th:text="${runTestDTO.getTimeBetweenRequests()}"></td>
+            <td th:text="${runTestDTO.getNumberOfUsers()}"></td>
+            <td th:text="${runTestDTO.getRequestsNumber()}"></td>
+            <td th:text="${runTestDTO.getTestTime()}"></td>
+          </tr>
+          <tr>
+            <td><p class="my-5"><a href="/setconf" class="btn btn-primary">Change configuration</a></p></td>
+            <td th:if="${testRunning}"><p class="my-5"><button disabled class="btn btn-primary">Run test</button></p></td>
+            <td th:if="${testRunning}"><p class="my-5"><a href="/stopTest" class="btn btn-primary">Stop test</a></p></td>
+            <td th:if="${!testRunning}"><p class="my-5"><a href="/runTest" class="btn btn-primary">Run test</a></p></td>
+            <td th:if="${!testRunning}"><p class="my-5"><button disabled class="btn btn-primary">Stop test</button></p></td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div th:switch="${tests.size()}" class="container my-5">
+  <div class="row">
+    <div class="col-md-12">
+      <h2 th:case="0">No tests yet!</h2>
+      <div th:case="*">
+        <h2 class="my-5">Tests</h2>
+        <table class="table table-striped table-responsive-md">
+          <thead>
+          <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Start date</th>
+            <th>End date</th>
+            <th>Finished</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="test : ${tests}" style="cursor: pointer"
+              th:onclick="'javascript:rowClicked(\'' + ${test.id} + '\');'">
+            <td th:text="${test.id}"></td>
+            <td th:text="${test.name}"></td>
+            <td th:text="${test.startDate}"></td>
+            <td th:text="${test.endDate}"></td>
+            <td th:text="${test.finished}"></td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

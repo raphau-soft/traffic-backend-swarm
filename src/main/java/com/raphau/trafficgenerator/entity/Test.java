@@ -14,15 +14,21 @@ public class Test {
 
     @OneToOne(mappedBy = "test")
     private TestParameters testParameters;
-    
+
     @OneToMany(mappedBy = "test")
     private List<TrafficGeneratorCpuData> cpuDatas;
-    
+
     @OneToMany(mappedBy = "test")
     private List<TrafficGeneratorTimeData> timeDatas;
 
     @Column(name = "name")
     private String name;
+
+	@Column(name = "start_timestamp")
+	private long startTimestamp;
+
+	@Column(name = "end_timestamp")
+	private Long endTimestamp;
 
     @Column(name = "finished")
     private boolean finished;
@@ -30,10 +36,11 @@ public class Test {
     public Test() {
     }
 
-	public Test(int id, String name, boolean finished) {
-		super();
+	public Test(int id, String name, long startTimestamp, Long endTimestamp, boolean finished) {
 		this.id = id;
 		this.name = name;
+		this.startTimestamp = startTimestamp;
+		this.endTimestamp = endTimestamp;
 		this.finished = finished;
 	}
 
@@ -85,12 +92,31 @@ public class Test {
 		this.finished = finished;
 	}
 
+	public long getStartTimestamp() {
+		return startTimestamp;
+	}
+
 	@Override
 	public String toString() {
 		return "Test{" +
 				"id=" + id +
 				", name='" + name + '\'' +
+				", startTimestamp=" + startTimestamp +
+				", endTimestamp=" + endTimestamp +
 				", finished=" + finished +
 				'}';
 	}
+
+	public void setStartTimestamp(long startTimestamp) {
+		this.startTimestamp = startTimestamp;
+	}
+
+	public Long getEndTimestamp() {
+		return endTimestamp;
+	}
+
+	public void setEndTimestamp(Long endTimestamp) {
+		this.endTimestamp = endTimestamp;
+	}
+
 }

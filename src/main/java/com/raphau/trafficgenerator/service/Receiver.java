@@ -1,6 +1,5 @@
 package com.raphau.trafficgenerator.service;
 
-import com.raphau.trafficgenerator.controller.TestController;
 import com.raphau.trafficgenerator.dao.StockExchangeCpuDataRepository;
 import com.raphau.trafficgenerator.dao.StockExchangeTimeDataRepository;
 import com.raphau.trafficgenerator.dao.TestRepository;
@@ -18,13 +17,11 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.transaction.Transactional;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 @Component
 public class Receiver {
@@ -46,42 +43,22 @@ public class Receiver {
     @Autowired
     private AsyncService asyncService;
 
-    @Autowired
-    private RabbitTemplate rabbitTemplate;
-
-    @Autowired
-    private List<Queue> rabbitQueues;
-
-    @Autowired
-    private RabbitAdmin admin;
-
     @RabbitListener(queues = "test-details-response")
     @Transactional
     public void receiveOfferMessage(TrafficGeneratorTimeDataDTO trafficGeneratorTimeDataDTO) {
-        if(!TestController.testRunning) return;
-        // traffic generator request time data
-        Test test = testRepository.findById(TestController.test.getId()).get();
+        if(!RunTestService.testRunning) return;
+        Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
         TrafficGeneratorTimeData trafficGeneratorTimeData = new TrafficGeneratorTimeData(trafficGeneratorTimeDataDTO, test);
         trafficGeneratorTimeDataRepository.save(trafficGeneratorTimeData);
     }
 
     @RabbitListener(queues = "cpu-data-request")
     public void receiveCpuDataMessage(CpuDataDTO cpuDataDTO) {
-        if(!TestController.testRunning) return;
-        Test test = testRepository.findById(TestController.test.getId()).get();
+        if(!RunTestService.testRunning) return;
+        Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
         StockExchangeCpuData stockExchangeCpuData = new StockExchangeCpuData(cpuDataDTO, test);
         stockExchangeCpuDataRepository.save(stockExchangeCpuData);
         System.out.println(stockExchangeCpuData);
-    }
-
-    @RabbitListener(queues = "time-data-request")
-    public void receiveTimeDataMessage(TimeDataDTO timeDataDTO) {
-        if(!TestController.testRunning) return;
-        // transaction time data
-        Test test = testRepository.findById(TestController.test.getId()).get();
-        StockExchangeTimeData stockExchangeTimeData = new StockExchangeTimeData(timeDataDTO, test);
-        stockExchangeTimeDataRepository.save(stockExchangeTimeData);
-        System.out.println(stockExchangeTimeData);
     }
 
     @RabbitListener(queues = "stock-data-response")
@@ -100,51 +77,20 @@ public class Receiver {
 
     @RabbitListener(queues = "register-response")
     public void receiveRegisterMessage(String flag) {
-        TestController.register.release();
+        RunTestService.register.release();
     }
 
     @RabbitListener(queues = "trade-response")
-    public void receiveTradeMessage(String tick) {
-        logger.info("Received trade response tick");
-        AsyncService.trading = false;
-    }
-
-    @Scheduled(cron = "0 */5 * * * ?")
-    public void trade() throws InterruptedException {
-        AsyncService.trading = true;
-//        int messageCount =
-//                getMessageCount("buy-offer-request") +
-//                getMessageCount("sell-offer-request") +
-//                getMessageCount("company-request");
-        int messageCount = getMessageCount();
-        logger.info("Waiting for offers to process...");
-        while(messageCount > 0) {
-            Thread.sleep(3000);
-//            messageCount = getMessageCount("buy-offer-request") +
-//                    getMessageCount("sell-offer-request") +
-//                    getMessageCount("company-request");
-            messageCount = getMessageCount();
-            logger.info("Offers while processing: " + messageCount);
+    public void receiveTradeMessage(TimeDataDTO timeDataDTO) {
+        if(timeDataDTO.getTimestamp() != 0) {
+            logger.info("Received trade time response " + timeDataDTO);
+            AsyncService.trading = false;
+            Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
+            StockExchangeTimeData stockExchangeTimeData = new StockExchangeTimeData(timeDataDTO, test);
+            stockExchangeTimeDataRepository.save(stockExchangeTimeData);
+        } else {
+            RunTestService.register.release();
         }
-        Thread.sleep(10000);
-        logger.info("Offers processed - sending trade tick");
-        this.rabbitTemplate.convertAndSend("trade-request-exchange", "foo.bar.#", "tick");
-    }
-
-    private int getMessageCount(String name) {
-        Properties props;
-        props = admin.getQueueProperties(name);
-        return Integer.parseInt(props.get("QUEUE_MESSAGE_COUNT").toString());
-    }
-
-    private int getMessageCount() {
-        Properties props;
-        int count = 0;
-        for(Queue queue : rabbitQueues) {
-            props = admin.getQueueProperties(queue.getName());
-            count += Integer.parseInt(props.get("QUEUE_MESSAGE_COUNT").toString());
-        }
-        return count;
     }
 
 }

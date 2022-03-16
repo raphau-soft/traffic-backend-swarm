@@ -3,7 +3,6 @@ package com.raphau.trafficgenerator.service;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import com.raphau.trafficgenerator.controller.TestController;
 import com.raphau.trafficgenerator.dto.*;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -86,14 +85,13 @@ public class AsyncService {
                     Thread.sleep(3000);
                 }
                 if (buy)
-                    sellAllStocks(username);
+                    requestsNumber = sellAllStocks(username, requestsNumber, runTestDTO);
                 else
-                    buyStocksUntilHaveMoney(username);
-                requestsNumber++;
+                    requestsNumber = buyStocksUntilHaveMoney(username, requestsNumber, runTestDTO);
                 buy = !buy;
                 if (endWork || requestsNumber >= runTestDTO.getRequestsNumber()) {
                     synchronized (lock) {
-                        TestController.processNumber--;
+                        RunTestService.processNumber--;
                     }
                     return;
                 }
@@ -113,7 +111,7 @@ public class AsyncService {
                 buy = !buy;
                 if (endWork || requestsNumber >= runTestDTO.getRequestsNumber()) {
                     synchronized (lock) {
-                        TestController.processNumber--;
+                        RunTestService.processNumber--;
                     }
                     return;
                 }
@@ -124,8 +122,8 @@ public class AsyncService {
                 while(trading) {
                     Thread.sleep(3000);
                 }
-                double random = Math.random();
-                if (random <= runTestDTO.getDataCheck()) {
+                int random = new Random().nextInt() % 2;
+                if (random == 0) {
                     getStockData(user);
                 } else {
                     getUsersAndCompanies(user);
@@ -133,7 +131,7 @@ public class AsyncService {
                 requestsNumber++;
                 if (endWork || requestsNumber >= runTestDTO.getRequestsNumber()) {
                     synchronized (lock) {
-                        TestController.processNumber--;
+                        RunTestService.processNumber--;
                     }
                     return;
                 }
@@ -175,10 +173,10 @@ public class AsyncService {
                 + rate * 0.8), 2);
         createSellOffer(username, company.getId(), stockAmountToSell, price);
         if (endWork || trading) return;
-        Thread.sleep(TestController.runTestDTO.getTimeBetweenRequests());
+        Thread.sleep(RunTestService.runTestDTO.getTimeBetweenRequests());
     }
 
-    private void sellAllStocks(String username) throws JSONException, InterruptedException {
+    private int sellAllStocks(String username, int requestsNumber, RunTestDTO runTestDTO) throws JSONException, InterruptedException {
         Gson gson = new GsonBuilder()
                 .registerTypeAdapter(Date.class, getUnixEpochDateTypeAdapter())
                 .create();
@@ -193,7 +191,7 @@ public class AsyncService {
         stockData.set(user, null);
         Type stockListType = new TypeToken<ArrayList<Stock>>() {}.getType();
         List<Stock> stocks = gson.fromJson(jsonObject.get("stock").toString(), stockListType);
-        if (stocks.size() <= 0) return;
+        if (stocks.size() <= 0) return requestsNumber;
         for (Stock stock : stocks) {
             int stockAmountToSell = stock.getAmount();
             if(stockAmountToSell == 0) {
@@ -213,11 +211,13 @@ public class AsyncService {
                     + rate * 0.8), 2);
             if(price == 0.0) continue;
             createSellOffer(username, company.getId(), stockAmountToSell, price);
+            requestsNumber++;
             stock.setAmount(0);
-            if (endWork || trading) return;
-            Thread.sleep(TestController.runTestDTO.getTimeBetweenRequests());
-            if (endWork || trading) return;
+            if (endWork || trading || requestsNumber >= runTestDTO.getRequestsNumber()) return requestsNumber;
+            Thread.sleep(RunTestService.runTestDTO.getTimeBetweenRequests());
+            if (endWork || trading || requestsNumber >= runTestDTO.getRequestsNumber()) return requestsNumber;
         }
+        return requestsNumber;
     }
 
     private void buyOneStock(String username) throws JSONException, InterruptedException {
@@ -253,10 +253,10 @@ public class AsyncService {
         int amount = (int) Math.round(Math.random() * 100.f % (money / price / 10)) + 1;
         createBuyOffer(username, company.getId(), amount, price);
         if (endWork || trading) return;
-        Thread.sleep(TestController.runTestDTO.getTimeBetweenRequests());
+        Thread.sleep(RunTestService.runTestDTO.getTimeBetweenRequests());
     }
 
-    private void buyStocksUntilHaveMoney(String username) throws JSONException, InterruptedException {
+    private int buyStocksUntilHaveMoney(String username, int requestsNumber, RunTestDTO runTestDTO) throws JSONException, InterruptedException {
         Gson gson = new GsonBuilder()
                 .registerTypeAdapter(Date.class, getUnixEpochDateTypeAdapter())
                 .create();
@@ -291,18 +291,26 @@ public class AsyncService {
                 int amount = (int) Math.round(Math.random() * 100.f % maxAmount);
                 if (amount == 0) break mainLoop;
                 createBuyOffer(username, company.getId(), amount, price);
+                requestsNumber++;
                 money -= price * amount;
-                if (endWork || trading) return;
-                Thread.sleep(TestController.runTestDTO.getTimeBetweenRequests());
-                if (endWork || trading) return;
+                if (endWork || trading || requestsNumber >= runTestDTO.getRequestsNumber()) return requestsNumber;
+                Thread.sleep(RunTestService.runTestDTO.getTimeBetweenRequests());
+                if (endWork || trading || requestsNumber >= runTestDTO.getRequestsNumber()) return requestsNumber;
             }
         }
+        return requestsNumber;
     }
 
     public void postRegistration(String username) throws InterruptedException {
-        TestController.register.acquire();
+        RunTestService.register.acquire();
         log.info("Register user: " + username);
         this.rabbitTemplate.convertAndSend("register-request-exchange", "foo.bar.#", username);
+    }
+
+    public void clearStockDB() throws InterruptedException {
+        RunTestService.register.acquire();
+        log.info("Clearing stock database");
+        this.rabbitTemplate.convertAndSend("trade-request-exchange", "foo.bar.#", "1");
     }
 
     private void createCompany(String username) {

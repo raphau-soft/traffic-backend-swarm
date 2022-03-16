@@ -32,7 +32,6 @@ public class AsyncConfiguration {
     static final String topicExchangeNameCompany = "company-exchange";
     static final String topicExchangeNameTestDetails = "test-details-exchange";
     static final String topicExchangeNameCpuData = "cpu-data-exchange";
-    static final String topicExchangeNameTimeData = "time-data-exchange";
     static final String topicExchangeNameUserData = "user-data-exchange";
     static final String topicExchangeNameStockData = "stock-data-exchange";
     static final String topicExchangeNameUserDataResponse = "user-data-response-exchange";
@@ -138,11 +137,6 @@ public class AsyncConfiguration {
     }
 
     @Bean
-    TopicExchange exchangeTimeData() {
-        return new TopicExchange(topicExchangeNameTimeData);
-    }
-
-    @Bean
     TopicExchange exchangeUserData() {
         return new TopicExchange(topicExchangeNameUserData);
     }
@@ -205,11 +199,6 @@ public class AsyncConfiguration {
     @Bean
     Binding bindingCpuData(Queue queueCpuData, TopicExchange exchangeCpuData) {
         return BindingBuilder.bind(queueCpuData).to(exchangeCpuData).with("foo.bar.#");
-    }
-
-    @Bean
-    Binding bindingTimeData(Queue queueTimeData, TopicExchange exchangeTimeData) {
-        return BindingBuilder.bind(queueTimeData).to(exchangeTimeData).with("foo.bar.#");
     }
 
     @Bean

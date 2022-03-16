@@ -1,42 +1,35 @@
 package com.raphau.trafficgenerator.dto;
 
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
+
+@Entity
 public class RunTestDTO {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private long id;
+    @Min(20)
     private int timeBetweenRequests;
+    @Min(1)
     private int numberOfUsers;
-    private double stockPlay;
-    private double createBuyOffer;
-    private double createSellOffer;
-    private double deleteSellOffer;
-    private double deleteBuyOffer;
-    private double dataCheck;
-    private double checkBuyOffers;
-    private double checkSellOffers;
-    private double checkUserData;
-    private int strategy;
+    @Min(1000)
     private int testTime;
+    @Min(1)
     private int requestsNumber;
 
     public RunTestDTO() {
     }
 
-    public RunTestDTO(int timeBetweenRequests, int numberOfUsers, double stockPlay,
-                      double createBuyOffer, double createSellOffer, double deleteSellOffer,
-                      double deleteBuyOffer, double dataCheck,
-                      double checkBuyOffers, double checkSellOffers, double checkUserData,
-                      int strategy, int testTime, int requestsNumber) {
+    public RunTestDTO(int timeBetweenRequests, int numberOfUsers,
+                      int testTime, int requestsNumber) {
         this.timeBetweenRequests = timeBetweenRequests;
         this.numberOfUsers = numberOfUsers;
-        this.stockPlay = stockPlay;
-        this.createBuyOffer = createBuyOffer;
-        this.createSellOffer = createSellOffer;
-        this.deleteSellOffer = deleteSellOffer;
-        this.deleteBuyOffer = deleteBuyOffer;
-        this.dataCheck = dataCheck;
-        this.checkBuyOffers = checkBuyOffers;
-        this.checkSellOffers = checkSellOffers;
-        this.checkUserData = checkUserData;
-        this.strategy = strategy;
         this.testTime = testTime;
         this.requestsNumber = requestsNumber;
     }
@@ -71,85 +64,5 @@ public class RunTestDTO {
 
     public void setNumberOfUsers(int numberOfUsers) {
         this.numberOfUsers = numberOfUsers;
-    }
-
-    public double getStockPlay() {
-        return stockPlay;
-    }
-
-    public void setStockPlay(double stockPlay) {
-        this.stockPlay = stockPlay;
-    }
-
-    public double getCreateBuyOffer() {
-        return createBuyOffer;
-    }
-
-    public void setCreateBuyOffer(double createBuyOffer) {
-        this.createBuyOffer = createBuyOffer;
-    }
-
-    public double getCreateSellOffer() {
-        return createSellOffer;
-    }
-
-    public void setCreateSellOffer(double createSellOffer) {
-        this.createSellOffer = createSellOffer;
-    }
-
-    public double getDeleteSellOffer() {
-        return deleteSellOffer;
-    }
-
-    public void setDeleteSellOffer(double deleteSellOffer) {
-        this.deleteSellOffer = deleteSellOffer;
-    }
-
-    public double getDeleteBuyOffer() {
-        return deleteBuyOffer;
-    }
-
-    public void setDeleteBuyOffer(double deleteBuyOffer) {
-        this.deleteBuyOffer = deleteBuyOffer;
-    }
-
-    public double getDataCheck() {
-        return dataCheck;
-    }
-
-    public void setDataCheck(double dataCheck) {
-        this.dataCheck = dataCheck;
-    }
-
-    public double getCheckBuyOffers() {
-        return checkBuyOffers;
-    }
-
-    public void setCheckBuyOffers(double checkBuyOffers) {
-        this.checkBuyOffers = checkBuyOffers;
-    }
-
-    public double getCheckSellOffers() {
-        return checkSellOffers;
-    }
-
-    public void setCheckSellOffers(double checkSellOffers) {
-        this.checkSellOffers = checkSellOffers;
-    }
-
-    public double getCheckUserData() {
-        return checkUserData;
-    }
-
-    public void setCheckUserData(double checkUserData) {
-        this.checkUserData = checkUserData;
-    }
-
-    public int getStrategy() {
-        return strategy;
-    }
-
-    public void setStrategy(int strategy) {
-        this.strategy = strategy;
     }
 }

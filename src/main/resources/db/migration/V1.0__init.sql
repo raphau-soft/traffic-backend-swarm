@@ -2,9 +2,11 @@ USE `traffic_generator`;
 
 CREATE TABLE IF NOT EXISTS `test`
 (
-    `id`       int         NOT NULL AUTO_INCREMENT,
-    `name`     varchar(45) NOT NULL,
-    `finished` boolean     NOT NULL,
+    `id`        int         NOT NULL AUTO_INCREMENT,
+    `name`      varchar(45) NOT NULL,
+    `start_timestamp` bigint(45)  NOT NULL,
+    `end_timestamp` bigint(45),
+    `finished`  boolean     NOT NULL,
     PRIMARY KEY (`id`)
 );
 
