@@ -14,30 +14,64 @@ public class TrafficGeneratorTimeData {
     @Column(name="id")
     private int id;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(cascade = CascadeType.MERGE)
     @JoinColumn(name = "test_id", referencedColumnName = "id")
     @JsonBackReference
     private Test test;
 
     @Column(name = "application_time")
-    private long applicationTime;
+    private Long applicationTime;
 
     @Column(name = "database_time")
-    private long databaseTime;
+    private Long databaseTime;
     
     @Column(name = "timestamp")
-    private long timestamp;
+    private Long timestamp;
     
     @Column(name = "endpoint_url")
     private String endpointUrl;
 
     @Column(name = "method")
     private String method;
+
+	@Column(name = "stock_id")
+	private String stockId;
     
     public TrafficGeneratorTimeData() {
     }
 
-	public TrafficGeneratorTimeData(int id, Test test, long appTime, long dbTime, long timestamp, String endpointUrl,
+	public TrafficGeneratorTimeData(int id, Test test, Long applicationTime, Long databaseTime, Long timestamp, String endpointUrl, String method, String stockId) {
+		this.id = id;
+		this.test = test;
+		this.applicationTime = applicationTime;
+		this.databaseTime = databaseTime;
+		this.timestamp = timestamp;
+		this.endpointUrl = endpointUrl;
+		this.method = method;
+		this.stockId = stockId;
+	}
+
+	public void setApplicationTime(Long applicationTime) {
+		this.applicationTime = applicationTime;
+	}
+
+	public void setDatabaseTime(Long databaseTime) {
+		this.databaseTime = databaseTime;
+	}
+
+	public void setTimestamp(Long timestamp) {
+		this.timestamp = timestamp;
+	}
+
+	public String getStockId() {
+		return stockId;
+	}
+
+	public void setStockId(String stockId) {
+		this.stockId = stockId;
+	}
+
+	public TrafficGeneratorTimeData(int id, Test test, Long appTime, Long dbTime, Long timestamp, String endpointUrl,
 									String method) {
 		super();
 		this.id = id;
@@ -51,13 +85,14 @@ public class TrafficGeneratorTimeData {
 
 	public TrafficGeneratorTimeData(TrafficGeneratorTimeDataDTO trafficGeneratorTimeDataDTO, Test test) {
 		super();
-		this.id = 0;
+		this.id = trafficGeneratorTimeDataDTO.getId();
 		this.test = test;
 		this.applicationTime = trafficGeneratorTimeDataDTO.getApplicationTime();
 		this.databaseTime = trafficGeneratorTimeDataDTO.getDatabaseTime();
 		this.timestamp = trafficGeneratorTimeDataDTO.getTimestamp();
 		this.endpointUrl = trafficGeneratorTimeDataDTO.getEndpointUrl();
 		this.method = trafficGeneratorTimeDataDTO.getMethod();
+		this.stockId = trafficGeneratorTimeDataDTO.getStockId();
 	}
 
 	public int getId() {
@@ -76,7 +111,7 @@ public class TrafficGeneratorTimeData {
 		this.test = test;
 	}
 
-	public long getApplicationTime() {
+	public Long getApplicationTime() {
 		return applicationTime;
 	}
 
@@ -84,7 +119,7 @@ public class TrafficGeneratorTimeData {
 		this.applicationTime = appTime;
 	}
 
-	public long getDatabaseTime() {
+	public Long getDatabaseTime() {
 		return databaseTime;
 	}
 
@@ -92,7 +127,7 @@ public class TrafficGeneratorTimeData {
 		this.databaseTime = dbTime;
 	}
 
-	public long getTimestamp() {
+	public Long getTimestamp() {
 		return timestamp;
 	}
 

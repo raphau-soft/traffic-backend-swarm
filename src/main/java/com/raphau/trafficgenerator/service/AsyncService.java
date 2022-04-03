@@ -3,7 +3,11 @@ package com.raphau.trafficgenerator.service;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import com.raphau.trafficgenerator.dao.TestRepository;
+import com.raphau.trafficgenerator.dao.TrafficGeneratorTimeDataRepository;
 import com.raphau.trafficgenerator.dto.*;
+import com.raphau.trafficgenerator.entity.Test;
+import com.raphau.trafficgenerator.entity.TrafficGeneratorTimeData;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.LoggerFactory;
@@ -26,7 +30,7 @@ import static com.raphau.trafficgenerator.configuration.UnixEpochDateTypeAdapter
 public class AsyncService {
 
     private static final Logger log = LoggerFactory.getLogger(AsyncService.class);
-    private final Object lock = new Object();
+    public final Object lock = new Object();
     private List<JSONObject> stockData;
     private List<JSONObject> usersAndCompanies;
     public static List<Semaphore> semaphores;
@@ -56,8 +60,14 @@ public class AsyncService {
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
+    @Autowired
+    private TestRepository testRepository;
+
+    @Autowired
+    private TrafficGeneratorTimeDataRepository trafficGeneratorTimeDataRepository;
+
     @Async("asyncExecutor")
-    public void runTests(String username, RunTestDTO runTestDTO) throws JSONException,
+    public void runTests(String username, RunTestDTO runTestDTO, int strategy) throws JSONException,
             InterruptedException {
         int requestsNumber = 0;
         Gson gson = new Gson();
@@ -74,9 +84,8 @@ public class AsyncService {
         if (stocks.isEmpty()){
             createCompany(username);
         }
-        Random randomGenerator = new Random();
-        int randomStrategy = randomGenerator.nextInt() % 3;
-        if (randomStrategy == 0) {
+        log.info("User: " + username + ", strategy: " + strategy);
+        if (strategy == 1) {
             boolean buy = true;
             for (; ; ) {
                 while(trading) {
@@ -87,16 +96,16 @@ public class AsyncService {
                 else
                     requestsNumber = buyStocksUntilHaveMoney(username, requestsNumber, runTestDTO);
                 buy = !buy;
-                if (endWork || requestsNumber >= runTestDTO.getRequestsNumber()) {
+                if (runTestDTO.isRequestLimit() && requestsNumber >= runTestDTO.getRequestsNumber() || endWork) {
                     synchronized (lock) {
                         RunTestService.processNumber--;
-                        log.info(username + " ending, process number: " + RunTestService.processNumber);
+                        log.info(username + " ending, @@@ process number: " + RunTestService.processNumber);
                     }
                     return;
                 }
                 Thread.sleep(runTestDTO.getTimeBetweenRequests());
             }
-        } else if (randomStrategy == 1) {
+        } else if (strategy == 2) {
             boolean buy = true;
             for (; ; ) {
                 while(trading) {
@@ -106,12 +115,13 @@ public class AsyncService {
                     sellOneStock(username);
                 else
                     buyOneStock(username);
-                requestsNumber++;
+                if(runTestDTO.isRequestLimit())
+                    requestsNumber++;
                 buy = !buy;
-                if (endWork || requestsNumber >= runTestDTO.getRequestsNumber()) {
+                if (runTestDTO.isRequestLimit() && requestsNumber >= runTestDTO.getRequestsNumber() || endWork) {
                     synchronized (lock) {
                         RunTestService.processNumber--;
-                        log.info(username + " ending, process number: " + RunTestService.processNumber);
+                        log.info(username + " ending, @@@ process number: " + RunTestService.processNumber);
                     }
                     return;
                 }
@@ -129,10 +139,10 @@ public class AsyncService {
                     getUsersAndCompanies(user);
                 }
                 requestsNumber++;
-                if (endWork || requestsNumber >= runTestDTO.getRequestsNumber()) {
+                if (runTestDTO.isRequestLimit() && requestsNumber >= runTestDTO.getRequestsNumber() || endWork) {
                     synchronized (lock) {
                         RunTestService.processNumber--;
-                        log.info(username + " ending, process number: " + RunTestService.processNumber);
+                        log.info(username + " ending, @@@ process number: " + RunTestService.processNumber);
                     }
                     return;
                 }
@@ -212,11 +222,12 @@ public class AsyncService {
                     + rate * 0.8), 2);
             if(price == 0.0) continue;
             createSellOffer(username, company.getId(), stockAmountToSell, price);
-            requestsNumber++;
+            if(runTestDTO.isRequestLimit())
+                requestsNumber++;
             stock.setAmount(0);
-            if (endWork || trading || requestsNumber >= runTestDTO.getRequestsNumber()) return requestsNumber;
+            if (runTestDTO.isRequestLimit() && requestsNumber >= runTestDTO.getRequestsNumber() || endWork || trading) return requestsNumber;
             Thread.sleep(RunTestService.runTestDTO.getTimeBetweenRequests());
-            if (endWork || trading || requestsNumber >= runTestDTO.getRequestsNumber()) return requestsNumber;
+            if (runTestDTO.isRequestLimit() && requestsNumber >= runTestDTO.getRequestsNumber() || endWork || trading) return requestsNumber;
         }
         return requestsNumber;
     }
@@ -293,11 +304,12 @@ public class AsyncService {
                 int amount = (int) Math.round(Math.random() * 100.f % maxAmount);
                 if (amount == 0) break mainLoop;
                 createBuyOffer(username, company.getId(), amount, price);
-                requestsNumber++;
+                if(runTestDTO.isRequestLimit())
+                    requestsNumber++;
                 money -= price * amount;
-                if (endWork || trading || requestsNumber >= runTestDTO.getRequestsNumber()) return requestsNumber;
+                if (runTestDTO.isRequestLimit() && requestsNumber >= runTestDTO.getRequestsNumber() || endWork || trading) return requestsNumber;
                 Thread.sleep(RunTestService.runTestDTO.getTimeBetweenRequests());
-                if (endWork || trading || requestsNumber >= runTestDTO.getRequestsNumber()) return requestsNumber;
+                if (runTestDTO.isRequestLimit() && requestsNumber >= runTestDTO.getRequestsNumber() || endWork || trading) return requestsNumber;
             }
         }
         return requestsNumber;
@@ -315,7 +327,7 @@ public class AsyncService {
         this.rabbitTemplate.convertAndSend("trade-request-exchange", "foo.bar.#", "1");
     }
 
-    private void createCompany(String username) {
+    void createCompany(String username) {
         int leftLimit = 97;
         int rightLimit = 122;
         int targetStringLength = 7;
@@ -328,8 +340,13 @@ public class AsyncService {
         String name = sb.toString();
         int amount = Math.abs(new Random().nextInt() % 1500) + 50;
         double price = Math.round(new Random().nextDouble() * 10000) / 100.0;
+        Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
+        TrafficGeneratorTimeData trafficGeneratorTimeData = new TrafficGeneratorTimeData(
+                0, test, null, null, null, "add-company", "POST"
 
-        this.rabbitTemplate.convertAndSend("company-exchange", "foo.bar.#", new CompanyDTO(0, username, name, amount, price));
+        );
+        trafficGeneratorTimeDataRepository.saveAndFlush(trafficGeneratorTimeData);
+        this.rabbitTemplate.convertAndSend("company-exchange", "foo.bar.#", new CompanyDTO(0, username, name, amount, price, trafficGeneratorTimeData.getId()));
     }
 
     public static double round(double value, int places) {
@@ -340,15 +357,26 @@ public class AsyncService {
         return bd.doubleValue();
     }
 
-
-    private void createBuyOffer(String username, int companyId, int amount, double price) {
+    void createBuyOffer(String username, int companyId, int amount, double price) {
         log.info("User " + username + " sent create buy offer request");
-        this.rabbitTemplate.convertAndSend("buy-offer-exchange", "foo.bar.#", new BuyOfferDTO(0, username, companyId, BigDecimal.valueOf(price), amount, new Date()));
+        Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
+        TrafficGeneratorTimeData trafficGeneratorTimeData = new TrafficGeneratorTimeData(
+                0, test, null, null, null, "add-buy-offer", "POST"
+
+        );
+        trafficGeneratorTimeDataRepository.saveAndFlush(trafficGeneratorTimeData);
+        this.rabbitTemplate.convertAndSend("buy-offer-exchange", "foo.bar.#", new BuyOfferDTO(0, username, companyId, BigDecimal.valueOf(price), amount, new Date(), trafficGeneratorTimeData.getId()));
     }
 
-    private void createSellOffer(String username, int companyId, int amount, double price) {
+    void createSellOffer(String username, int companyId, int amount, double price) {
         log.info("User " + username + " sent create sell offer request");
-        this.rabbitTemplate.convertAndSend("sell-offer-exchange", "foo.bar.#", new SellOfferDTO(0, username, companyId, BigDecimal.valueOf(price), amount, new Date()));
+        Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
+        TrafficGeneratorTimeData trafficGeneratorTimeData = new TrafficGeneratorTimeData(
+                0, test, null, null, null, "add-sell-offer", "POST"
+
+        );
+        trafficGeneratorTimeDataRepository.saveAndFlush(trafficGeneratorTimeData);
+        this.rabbitTemplate.convertAndSend("sell-offer-exchange", "foo.bar.#", new SellOfferDTO(0, username, companyId, BigDecimal.valueOf(price), amount, new Date(), trafficGeneratorTimeData.getId()));
     }
 
     private void getStockData(int user) throws InterruptedException {

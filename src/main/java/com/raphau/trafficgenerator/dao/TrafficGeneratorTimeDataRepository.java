@@ -13,4 +13,6 @@ public interface TrafficGeneratorTimeDataRepository extends JpaRepository<Traffi
 
     @Query("SELECT DISTINCT endpointUrl FROM TrafficGeneratorTimeData WHERE test = ?1")
     List<String> findDistinctUrlByTestId(Test test);
+
+
 }

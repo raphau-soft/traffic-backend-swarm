@@ -32,6 +32,11 @@
                         <th>Number of users</th>
                         <th>Number of requests</th>
                         <th>Time of test (s)</th>
+                        <th>First strategy</th>
+                        <th>Second strategy</th>
+                        <th>Third strategy</th>
+                        <th>Time limit</th>
+                        <th>Requests limit</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -44,6 +49,11 @@
                         <td th:text="${testParameters.getNumber_of_users()}"></td>
                         <td th:text="${testParameters.getNumber_of_requests()}"></td>
                         <td th:text="${testParameters.getTest_time()}"></td>
+                        <td th:text="${testParameters.getFirst()}"></td>
+                        <td th:text="${testParameters.getSecond()}"></td>
+                        <td th:text="${testParameters.getThird()}"></td>
+                        <td th:text="${testParameters.isTimeLimit()}"></td>
+                        <td th:text="${testParameters.isRequestLimit()}"></td>
                     </tr>
                     <tr>
                         <td></td>

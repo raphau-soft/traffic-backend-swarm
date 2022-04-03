@@ -25,6 +25,9 @@ public class StockExchangeCpuData {
     @Column(name = "cpu_usage")
     private Double cpuUsage;
 
+	@Column(name = "stock_id")
+	private String stockId;
+
     public StockExchangeCpuData() {
     }
 
@@ -36,12 +39,29 @@ public class StockExchangeCpuData {
 		this.cpuUsage = cpuUsage;
 	}
 
+	public StockExchangeCpuData(int id, Test test, long timestamp, Double cpuUsage, String stockId) {
+		this.id = id;
+		this.test = test;
+		this.timestamp = timestamp;
+		this.cpuUsage = cpuUsage;
+		this.stockId = stockId;
+	}
+
+	public String getStockId() {
+		return stockId;
+	}
+
+	public void setStockId(String stockId) {
+		this.stockId = stockId;
+	}
+
 	public StockExchangeCpuData(CpuDataDTO cpuDataDTO, Test test) {
 		super();
 		this.id = 0;
 		this.test = test;
 		this.timestamp = cpuDataDTO.getTimestamp();
 		this.cpuUsage = cpuDataDTO.getCpuUsage();
+		this.stockId = cpuDataDTO.getStockId();
 	}
 
 	public int getId() {

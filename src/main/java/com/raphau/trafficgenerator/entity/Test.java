@@ -12,13 +12,13 @@ public class Test {
     @Column(name="id")
     private int id;
 
-    @OneToOne(mappedBy = "test")
+    @OneToOne(mappedBy = "test", cascade = {CascadeType.MERGE, CascadeType.REMOVE})
     private TestParameters testParameters;
 
-    @OneToMany(mappedBy = "test")
+    @OneToMany(mappedBy = "test", cascade = {CascadeType.MERGE, CascadeType.REMOVE})
     private List<TrafficGeneratorCpuData> cpuDatas;
 
-    @OneToMany(mappedBy = "test")
+    @OneToMany(mappedBy = "test", cascade = {CascadeType.MERGE, CascadeType.REMOVE})
     private List<TrafficGeneratorTimeData> timeDatas;
 
     @Column(name = "name")

@@ -12,15 +12,11 @@ import com.raphau.trafficgenerator.entity.TrafficGeneratorTimeData;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.transaction.Transactional;
-import java.util.List;
 import java.util.Map;
 
 @Component
@@ -46,7 +42,6 @@ public class Receiver {
     @RabbitListener(queues = "test-details-response")
     @Transactional
     public void receiveOfferMessage(TrafficGeneratorTimeDataDTO trafficGeneratorTimeDataDTO) {
-        if(!RunTestService.testRunning) return;
         Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
         TrafficGeneratorTimeData trafficGeneratorTimeData = new TrafficGeneratorTimeData(trafficGeneratorTimeDataDTO, test);
         trafficGeneratorTimeDataRepository.save(trafficGeneratorTimeData);
@@ -89,6 +84,7 @@ public class Receiver {
             Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
             StockExchangeTimeData stockExchangeTimeData = new StockExchangeTimeData(timeDataDTO, test);
             stockExchangeTimeDataRepository.save(stockExchangeTimeData);
+            RunTestService.trade.release();
         } else {
             RunTestService.register.release();
         }

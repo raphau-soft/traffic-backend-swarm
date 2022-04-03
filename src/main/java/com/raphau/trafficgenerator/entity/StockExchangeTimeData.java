@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.raphau.trafficgenerator.dto.TimeDataDTO;
 
 import javax.persistence.*;
+import java.util.Objects;
 
 @Entity
 @Table(name="stock_exchange_time_data", schema = "stock_exchange")
@@ -28,6 +29,34 @@ public class StockExchangeTimeData {
 	 @Column(name = "application_time")
 	 private long applicationTime;
 
+	 @Column(name = "number_of_sell_offers")
+	 private long numberOfSellOffers;
+
+	 @Column(name = "number_of_buy_offers")
+	 private long numberOfBuyOffers;
+
+	@Column(name = "stock_id")
+	private String stockId;
+
+	public StockExchangeTimeData(int id, Test test, long timestamp, long databaseTime, long applicationTime, long numberOfSellOffers, long numberOfBuyOffers, String stockId) {
+		this.id = id;
+		this.test = test;
+		this.timestamp = timestamp;
+		this.databaseTime = databaseTime;
+		this.applicationTime = applicationTime;
+		this.numberOfSellOffers = numberOfSellOffers;
+		this.numberOfBuyOffers = numberOfBuyOffers;
+		this.stockId = stockId;
+	}
+
+	public String getStockId() {
+		return stockId;
+	}
+
+	public void setStockId(String stockId) {
+		this.stockId = stockId;
+	}
+
 	public int getId() {
 		return id;
 	}
@@ -48,41 +77,45 @@ public class StockExchangeTimeData {
 		super();
 	}
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + (int) (applicationTime ^ (applicationTime >>> 32));
-		result = prime * result + (int) (databaseTime ^ (databaseTime >>> 32));
-		result = prime * result + id;
-		result = prime * result + (int) (timestamp ^ (timestamp >>> 32));
-		return result;
+	public long getNumberOfSellOffers() {
+		return numberOfSellOffers;
+	}
+
+	public void setNumberOfSellOffers(long numberOfSellOffers) {
+		this.numberOfSellOffers = numberOfSellOffers;
+	}
+
+	public long getNumberOfBuyOffers() {
+		return numberOfBuyOffers;
+	}
+
+	public void setNumberOfBuyOffers(long numberOfBuyOffers) {
+		this.numberOfBuyOffers = numberOfBuyOffers;
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		StockExchangeTimeData other = (StockExchangeTimeData) obj;
-		if (applicationTime != other.applicationTime)
-			return false;
-		if (databaseTime != other.databaseTime)
-			return false;
-		if (id != other.id)
-			return false;
-		if (timestamp != other.timestamp)
-			return false;
-		return true;
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		StockExchangeTimeData that = (StockExchangeTimeData) o;
+		return id == that.id && timestamp == that.timestamp && databaseTime == that.databaseTime && applicationTime == that.applicationTime && numberOfSellOffers == that.numberOfSellOffers && numberOfBuyOffers == that.numberOfBuyOffers && Objects.equals(test, that.test);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(id, test, timestamp, databaseTime, applicationTime, numberOfSellOffers, numberOfBuyOffers);
 	}
 
 	@Override
 	public String toString() {
-		return "TimeData [id=" + id + ", test=" + test + ", timestamp=" + timestamp + ", databaseTime=" + databaseTime
-				+ ", applicationTime=" + applicationTime + ", semaphoreWaitTime=" + "]";
+		return "StockExchangeTimeData{" +
+				"id=" + id +
+				", timestamp=" + timestamp +
+				", databaseTime=" + databaseTime +
+				", applicationTime=" + applicationTime +
+				", numberOfSellOffers=" + numberOfSellOffers +
+				", numberOfBuyOffers=" + numberOfBuyOffers +
+				'}';
 	}
 
 	public StockExchangeTimeData(int id, Test test, long timestamp, long databaseTime, long applicationTime) {
@@ -94,6 +127,16 @@ public class StockExchangeTimeData {
 		this.applicationTime = applicationTime;
 	}
 
+	public StockExchangeTimeData(int id, Test test, long timestamp, long databaseTime, long applicationTime, long numberOfSellOffers, long numberOfBuyOffers) {
+		this.id = id;
+		this.test = test;
+		this.timestamp = timestamp;
+		this.databaseTime = databaseTime;
+		this.applicationTime = applicationTime;
+		this.numberOfSellOffers = numberOfSellOffers;
+		this.numberOfBuyOffers = numberOfBuyOffers;
+	}
+
 	public StockExchangeTimeData(TimeDataDTO timeDataDTO, Test test) {
 		super();
 		this.id = 0;
@@ -101,6 +144,9 @@ public class StockExchangeTimeData {
 		this.timestamp = timeDataDTO.getTimestamp();
 		this.databaseTime = timeDataDTO.getDatabaseTime();
 		this.applicationTime = timeDataDTO.getApplicationTime();
+		this.numberOfBuyOffers = timeDataDTO.getNumberOfBuyOffers();
+		this.numberOfSellOffers = timeDataDTO.getNumberOfSellOffers();
+		this.stockId = timeDataDTO.getStockId();
 	}
 
 	public long getTimestamp() {

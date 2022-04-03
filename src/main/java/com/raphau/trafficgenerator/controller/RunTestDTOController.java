@@ -4,6 +4,7 @@ import com.raphau.trafficgenerator.dao.*;
 import com.raphau.trafficgenerator.dto.RunTestDTO;
 import com.raphau.trafficgenerator.dto.TestDTO;
 import com.raphau.trafficgenerator.entity.*;
+import com.raphau.trafficgenerator.service.AsyncService;
 import com.raphau.trafficgenerator.service.RunTestService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -21,6 +24,8 @@ import org.supercsv.prefs.CsvPreference;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -58,13 +63,28 @@ public class RunTestDTOController {
         return "index";
     }
 
+    @GetMapping("/cleanDB")
+    public String cleanDB(Model model) {
+        stockExchangeTimeDataRepository.deleteAll();
+        stockExchangeCpuDataRepository.deleteAll();
+        testRepository.deleteAll();
+        return "redirect:/index";
+    }
+
     @GetMapping("/setconf")
-    public String setConf(RunTestDTO runTestDTO) {
+    public String setConf(Model model) {
+        model.addAttribute("runTestDTO", RunTestService.runTestDTO);
         return "setconf";
     }
 
     @PostMapping("/postconf")
     public String postConf(@Valid RunTestDTO runTestDTO, BindingResult bindingResult) {
+        if(runTestDTO.getFirst() + runTestDTO.getSecond() + runTestDTO.getThird() != runTestDTO.getNumberOfUsers()){
+            bindingResult.addError(new FieldError("runTestDTO", "first", "First + second + third != users"));
+        }
+        if(!runTestDTO.isRequestLimit() && !runTestDTO.isTimeLimit()) {
+            bindingResult.addError(new FieldError("runTestDTO", "timeLimit", "At least one limiter is required"));
+        }
         if(bindingResult.hasErrors()){
             return "setconf";
         }
@@ -128,8 +148,8 @@ public class RunTestDTOController {
 
     private void getMethodsTimeData(HttpServletResponse response, Test test) throws IOException {
         ICsvBeanWriter csvWriter = new CsvBeanWriter(response.getWriter(), CsvPreference.STANDARD_PREFERENCE);
-        String[] csvHeader = {"timestamp", "applicationTime", "databaseTime", "method", "endpointUrl"};
-        String[] nameMapping = {"timestamp", "applicationTime", "databaseTime", "method", "endpointUrl"};
+        String[] csvHeader = {"timestamp", "applicationTime", "databaseTime", "method", "endpointUrl", "replicaId"};
+        String[] nameMapping = {"timestamp", "applicationTime", "databaseTime", "method", "endpointUrl", "stockId"};
         csvWriter.writeHeader(csvHeader);
         List<TrafficGeneratorTimeData> list = trafficGeneratorTimeDataRepository.findAllByTest(test);
         for(TrafficGeneratorTimeData data : list) {
@@ -140,8 +160,8 @@ public class RunTestDTOController {
 
     private void getTradingTimeData(HttpServletResponse response, Test test) throws IOException {
         ICsvBeanWriter csvWriter = new CsvBeanWriter(response.getWriter(), CsvPreference.STANDARD_PREFERENCE);
-        String[] csvHeader = {"timestamp", "applicationTime", "databaseTime"};
-        String[] nameMapping = {"timestamp", "applicationTime", "databaseTime"};
+        String[] csvHeader = {"timestamp", "applicationTime", "databaseTime", "numberOfSellOffers", "numberOfBuyOffers", "replicaId"};
+        String[] nameMapping = {"timestamp", "applicationTime", "databaseTime", "numberOfSellOffers", "numberOfBuyOffers", "stockId"};
         csvWriter.writeHeader(csvHeader);
         List<StockExchangeTimeData> list = stockExchangeTimeDataRepository.findAllByTest(test);
         for(StockExchangeTimeData data : list) {
@@ -152,8 +172,8 @@ public class RunTestDTOController {
 
     private void getStockCpuData(HttpServletResponse response, Test test) throws IOException {
         ICsvBeanWriter csvWriter = new CsvBeanWriter(response.getWriter(), CsvPreference.STANDARD_PREFERENCE);
-        String[] csvHeader = {"timestamp", "cpuUsage"};
-        String[] nameMapping = {"timestamp", "cpuUsage"};
+        String[] csvHeader = {"timestamp", "cpuUsage", "replicaId"};
+        String[] nameMapping = {"timestamp", "cpuUsage", "stockId"};
         csvWriter.writeHeader(csvHeader);
         List<StockExchangeCpuData> list = stockExchangeCpuDataRepository.findAllByTest(test);
         for(StockExchangeCpuData data : list) {

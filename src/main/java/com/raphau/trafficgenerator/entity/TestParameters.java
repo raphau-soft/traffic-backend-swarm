@@ -1,6 +1,7 @@
 package com.raphau.trafficgenerator.entity;
 
 import javax.persistence.*;
+import javax.validation.constraints.Min;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.raphau.trafficgenerator.dto.RunTestDTO;
@@ -16,7 +17,7 @@ public class TestParameters {
     @Column(name="id")
     private int id;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne(cascade = CascadeType.MERGE)
     @JoinColumn(name = "test_id", referencedColumnName = "id")
     @JsonBackReference
     private Test test;
@@ -32,6 +33,17 @@ public class TestParameters {
     
     @Column(name = "time_between_requests")
     private int time_between_requests;
+
+	@Column(name = "first")
+	private int first;
+	@Column(name = "second")
+	private int second;
+	@Column(name = "third")
+	private int third;
+	@Column(name = "request_limit")
+	private boolean requestLimit;
+	@Column(name = "time_limit")
+	private boolean timeLimit;
     
     
     public TestParameters() {
@@ -42,6 +54,11 @@ public class TestParameters {
     	this.number_of_users = runTestDTO.getNumberOfUsers();
     	this.test_time = runTestDTO.getTestTime();
     	this.time_between_requests = runTestDTO.getTimeBetweenRequests();
+    	this.first = runTestDTO.getFirst();
+    	this.second = runTestDTO.getSecond();
+    	this.third = runTestDTO.getThird();
+    	this.requestLimit = runTestDTO.isRequestLimit();
+    	this.timeLimit = runTestDTO.isTimeLimit();
     }
 
 	public TestParameters(int id, Test test, int number_of_requests, int number_of_users, int test_time,
@@ -55,6 +72,45 @@ public class TestParameters {
 		this.time_between_requests = time_between_requests;
 	}
 
+	public boolean isRequestLimit() {
+		return requestLimit;
+	}
+
+	public void setRequestLimit(boolean requestLimit) {
+		this.requestLimit = requestLimit;
+	}
+
+	public boolean isTimeLimit() {
+		return timeLimit;
+	}
+
+	public void setTimeLimit(boolean timeLimit) {
+		this.timeLimit = timeLimit;
+	}
+
+	public int getFirst() {
+		return first;
+	}
+
+	public void setFirst(int first) {
+		this.first = first;
+	}
+
+	public int getSecond() {
+		return second;
+	}
+
+	public void setSecond(int second) {
+		this.second = second;
+	}
+
+	public int getThird() {
+		return third;
+	}
+
+	public void setThird(int third) {
+		this.third = third;
+	}
 
 	public int getId() {
 		return id;

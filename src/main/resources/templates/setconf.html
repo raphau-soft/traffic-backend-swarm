@@ -18,23 +18,48 @@
                 <div class="row">
                     <div class="form-group col-md-12">
                         <label for="timeBetweenRequests" class="col-form-label">Time between requests (ms)</label>
-                        <input type="number" th:field="*{timeBetweenRequests}" class="form-control" id="timeBetweenRequests" placeholder="Time between requests">
+                        <input value="${runTestDTO.getTimeBetweenRequests()}" type="number" th:field="*{timeBetweenRequests}" class="form-control" id="timeBetweenRequests" placeholder="Time between requests">
                         <span th:if="${#fields.hasErrors('timeBetweenRequests')}" th:errors="*{timeBetweenRequests}" class="text-danger"></span>
                     </div>
                     <div class="form-group col-md-12">
                         <label for="numberOfUsers" class="col-form-label">Number of users</label>
-                        <input type="number" th:field="*{numberOfUsers}" class="form-control" id="numberOfUsers" placeholder="Number of users">
+                        <input value="${runTestDTO.getNumberOfUsers()}" type="number" th:field="*{numberOfUsers}" class="form-control" id="numberOfUsers" placeholder="Number of users">
                         <span th:if="${#fields.hasErrors('numberOfUsers')}" th:errors="*{numberOfUsers}" class="text-danger"></span>
                     </div>
                     <div class="form-group col-md-12">
                         <label for="testTime" class="col-form-label">Time of test (s)</label>
-                        <input type="number" th:field="*{testTime}" class="form-control" id="testTime" placeholder="Time of test">
+                        <input value="${runTestDTO.getTestTime()}" type="number" th:field="*{testTime}" class="form-control" id="testTime" placeholder="Time of test">
                         <span th:if="${#fields.hasErrors('testTime')}" th:errors="*{testTime}" class="text-danger"></span>
                     </div>
                     <div class="form-group col-md-12">
                         <label for="requestsNumber" class="col-form-label">Number of requests</label>
-                        <input type="number" th:field="*{requestsNumber}" class="form-control" id="requestsNumber" placeholder="Number of requests">
+                        <input value="${runTestDTO.getRequestsNumber()}" type="number" th:field="*{requestsNumber}" class="form-control" id="requestsNumber" placeholder="Number of requests">
                         <span th:if="${#fields.hasErrors('requestsNumber')}" th:errors="*{requestsNumber}" class="text-danger"></span>
+                    </div>
+                    <div class="form-group col-md-12">
+                        <label for="first" class="col-form-label">Number of users that will use first strategy (sell all stocks, then buy as much as he can)</label>
+                        <input value="${runTestDTO.getFirst()}" type="number" th:field="*{first}" class="form-control" id="first" placeholder="First">
+                        <span th:if="${#fields.hasErrors('first')}" th:errors="*{first}" class="text-danger"></span>
+                    </div>
+                    <div class="form-group col-md-12">
+                        <label for="second" class="col-form-label">Number of users that will use second strategy (sell stocks of one company, then buy stocks of one company)</label>
+                        <input value="${runTestDTO.getSecond()}" type="number" th:field="*{second}" class="form-control" id="second" placeholder="Second">
+                        <span th:if="${#fields.hasErrors('second')}" th:errors="*{second}" class="text-danger"></span>
+                    </div>
+                    <div class="form-group col-md-12">
+                        <label for="third" class="col-form-label">Number of users that will use third strategy (just checking data, this strategy does not generate time datas)</label>
+                        <input value="${runTestDTO.getThird()}" type="number" th:field="*{third}" class="form-control" id="third" placeholder="Third">
+                        <span th:if="${#fields.hasErrors('third')}" th:errors="*{third}" class="text-danger"></span>
+                    </div>
+                    <div class="form-group col-md-12">
+                        <label for="timeLimit" class="col-form-label">Time limit</label>
+                        <input value="${runTestDTO.isTimeLimit()}" type="checkbox" th:field="*{timeLimit}" class="custom-checkbox" id="timeLimit">
+                        <br th:if="${#fields.hasErrors('timeLimit')}">
+                        <span th:if="${#fields.hasErrors('timeLimit')}" th:errors="*{timeLimit}" class="text-danger"></span>
+                    </div>
+                    <div class="form-group col-md-12">
+                        <label for="requestsLimit" class="col-form-label">Requests limit</label>
+                        <input value="${runTestDTO.isRequestLimit()}" type="checkbox" th:field="*{requestLimit}" class="custom-checkbox" id="requestsLimit">
                     </div>
                 </div>
                 <div class="row">

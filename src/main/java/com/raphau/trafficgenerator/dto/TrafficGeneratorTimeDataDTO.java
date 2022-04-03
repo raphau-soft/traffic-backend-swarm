@@ -11,12 +11,32 @@ public class TrafficGeneratorTimeDataDTO {
     private long timestamp;
     private String endpointUrl;
     private String method;
+	private String stockId;
 
-    public TrafficGeneratorTimeDataDTO() {
+	public String getStockId() {
+		return stockId;
+	}
+
+	public void setStockId(String stockId) {
+		this.stockId = stockId;
+	}
+
+	public TrafficGeneratorTimeDataDTO() {
     }
 
+	public TrafficGeneratorTimeDataDTO(int id, Test test, long applicationTime, long databaseTime, long timestamp, String endpointUrl, String method, String stockId) {
+		this.id = id;
+		this.test = test;
+		this.applicationTime = applicationTime;
+		this.databaseTime = databaseTime;
+		this.timestamp = timestamp;
+		this.endpointUrl = endpointUrl;
+		this.method = method;
+		this.stockId = stockId;
+	}
+
 	public TrafficGeneratorTimeDataDTO(int id, Test test, long appTime, long dbTime, long timestamp, String endpointUrl,
-                                       String method) {
+									   String method) {
 		super();
 		this.id = id;
 		this.test = test;
