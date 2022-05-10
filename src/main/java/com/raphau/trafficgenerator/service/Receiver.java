@@ -43,7 +43,8 @@ public class Receiver {
     @Transactional
     public void receiveOfferMessage(TrafficGeneratorTimeDataDTO trafficGeneratorTimeDataDTO) {
         Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
-        TrafficGeneratorTimeData trafficGeneratorTimeData = new TrafficGeneratorTimeData(trafficGeneratorTimeDataDTO, test);
+        TrafficGeneratorTimeData trafficGeneratorTimeData = trafficGeneratorTimeDataRepository.getOne(trafficGeneratorTimeDataDTO.getId());
+        trafficGeneratorTimeData.updateWithDTO(trafficGeneratorTimeData, trafficGeneratorTimeDataDTO, test);
         trafficGeneratorTimeDataRepository.save(trafficGeneratorTimeData);
     }
 
@@ -53,7 +54,6 @@ public class Receiver {
         Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
         StockExchangeCpuData stockExchangeCpuData = new StockExchangeCpuData(cpuDataDTO, test);
         stockExchangeCpuDataRepository.save(stockExchangeCpuData);
-        System.out.println(stockExchangeCpuData);
     }
 
     @RabbitListener(queues = "stock-data-response")
@@ -72,8 +72,13 @@ public class Receiver {
 
     @RabbitListener(queues = "register-response")
     public void receiveRegisterMessage(String flag) {
-        RunTestService.registered++;
-        RunTestService.register.release();
+        if(flag.equals("0")) {
+            RunTestService.registered++;
+            RunTestService.register.release();
+        }
+        if(flag.equals("1")) {
+            RunTestService.validator++;
+        }
     }
 
     @RabbitListener(queues = "trade-response")
@@ -84,7 +89,6 @@ public class Receiver {
             Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
             StockExchangeTimeData stockExchangeTimeData = new StockExchangeTimeData(timeDataDTO, test);
             stockExchangeTimeDataRepository.save(stockExchangeTimeData);
-            RunTestService.trade.release();
         } else {
             RunTestService.register.release();
         }

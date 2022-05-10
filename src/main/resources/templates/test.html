@@ -29,7 +29,6 @@
                         <th>Start date</th>
                         <th>End date</th>
                         <th>Time between requests (ms)</th>
-                        <th>Number of users</th>
                         <th>Number of requests</th>
                         <th>Time of test (s)</th>
                         <th>First strategy</th>
@@ -37,16 +36,16 @@
                         <th>Third strategy</th>
                         <th>Time limit</th>
                         <th>Requests limit</th>
+                        <th>Break between trades</th>
                     </tr>
                     </thead>
                     <tbody>
                     <tr>
                         <td th:text="${test.getId()}"></td>
                         <td th:text="${test.getName()}"></td>
-                        <td th:text="${test.getStartDate()}"></td>
-                        <td th:text="${test.getEndDate()}"></td>
+                        <td th:text="${test.getStartTimestamp()}"></td>
+                        <td th:text="${test.getEndTimestamp()}"></td>
                         <td th:text="${testParameters.getTime_between_requests()}"></td>
-                        <td th:text="${testParameters.getNumber_of_users()}"></td>
                         <td th:text="${testParameters.getNumber_of_requests()}"></td>
                         <td th:text="${testParameters.getTest_time()}"></td>
                         <td th:text="${testParameters.getFirst()}"></td>
@@ -54,6 +53,7 @@
                         <td th:text="${testParameters.getThird()}"></td>
                         <td th:text="${testParameters.isTimeLimit()}"></td>
                         <td th:text="${testParameters.isRequestLimit()}"></td>
+                        <td th:text="${testParameters.getBreakBetweenTrades()}"></td>
                     </tr>
                     <tr>
                         <td></td>

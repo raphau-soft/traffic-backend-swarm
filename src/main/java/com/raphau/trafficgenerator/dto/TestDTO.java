@@ -2,7 +2,9 @@ package com.raphau.trafficgenerator.dto;
 
 import com.raphau.trafficgenerator.entity.Test;
 
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 public class TestDTO {
@@ -10,8 +12,8 @@ public class TestDTO {
     private int id;
     private String name;
     private final SimpleDateFormat simpleDateFormat =  new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss");
-    private Date startTimestamp;
-    private Date endTimestamp;
+    private LocalDateTime startTimestamp;
+    private LocalDateTime endTimestamp;
     private long testTime;
     private String startDate;
     private String endDate;
@@ -20,7 +22,7 @@ public class TestDTO {
     public TestDTO() {
     }
 
-    public TestDTO(int id, String name, Date timestamp, boolean finished) {
+    public TestDTO(int id, String name, LocalDateTime timestamp, boolean finished) {
         this.id = id;
         this.name = name;
         this.startTimestamp = timestamp;
@@ -30,11 +32,9 @@ public class TestDTO {
     public TestDTO(Test test) {
         this.id = test.getId();
         this.name = test.getName();
-        this.startTimestamp = new Date(test.getStartTimestamp());
-        this.startDate = simpleDateFormat.format(this.startTimestamp);
+        this.startTimestamp = new Timestamp(test.getStartTimestamp()).toLocalDateTime();
         if(test.getEndTimestamp() != null){
-            this.endTimestamp = new Date(test.getEndTimestamp());
-            this.endDate = simpleDateFormat.format(this.endTimestamp);
+            this.endTimestamp = new Timestamp(test.getEndTimestamp()).toLocalDateTime();
         }
         this.finished = test.isFinished();
         if(test.getTestParameters() != null)
@@ -73,13 +73,6 @@ public class TestDTO {
         this.finished = finished;
     }
 
-    public Date getStartTimestamp() {
-        return startTimestamp;
-    }
-
-    public void setStartTimestamp(Date startTimestamp) {
-        this.startTimestamp = startTimestamp;
-    }
 
     public SimpleDateFormat getSimpleDateFormat() {
         return simpleDateFormat;
@@ -89,11 +82,19 @@ public class TestDTO {
         return startDate;
     }
 
-    public Date getEndTimestamp() {
+    public LocalDateTime getStartTimestamp() {
+        return startTimestamp;
+    }
+
+    public void setStartTimestamp(LocalDateTime startTimestamp) {
+        this.startTimestamp = startTimestamp;
+    }
+
+    public LocalDateTime getEndTimestamp() {
         return endTimestamp;
     }
 
-    public void setEndTimestamp(Date endTimestamp) {
+    public void setEndTimestamp(LocalDateTime endTimestamp) {
         this.endTimestamp = endTimestamp;
     }
 

@@ -25,7 +25,6 @@
           <thead>
           <tr>
             <th>Time between requests (ms)</th>
-            <th>Number of users</th>
             <th>Number of requests</th>
             <th>Time of test (s)</th>
             <th>First strategy</th>
@@ -33,12 +32,12 @@
             <th>Third strategy</th>
             <th>Time limit</th>
             <th>Requests limit</th>
+            <th>Break between trades</th>
           </tr>
           </thead>
           <tbody>
           <tr>
             <td th:text="${runTestDTO.getTimeBetweenRequests()}"></td>
-            <td th:text="${runTestDTO.getNumberOfUsers()}"></td>
             <td th:text="${runTestDTO.getRequestsNumber()}"></td>
             <td th:text="${runTestDTO.getTestTime()}"></td>
             <td th:text="${runTestDTO.getFirst()}"></td>
@@ -46,6 +45,7 @@
             <td th:text="${runTestDTO.getThird()}"></td>
             <td th:text="${runTestDTO.isTimeLimit()}"></td>
             <td th:text="${runTestDTO.isRequestLimit()}"></td>
+            <td th:text="${runTestDTO.getBreakBetweenTrades()}"></td>
           </tr>
           <tr>
             <td><p class="my-5"><a href="/setconf" class="btn btn-primary">Change configuration</a></p></td>
@@ -53,7 +53,10 @@
             <td th:if="${testRunning}"><p class="my-5"><a href="/stopTest" class="btn btn-primary">Stop test</a></p></td>
             <td th:if="${!testRunning}"><p class="my-5"><a href="/runTest" class="btn btn-primary">Run test</a></p></td>
             <td th:if="${!testRunning}"><p class="my-5"><button disabled class="btn btn-primary">Stop test</button></p></td>
-            <td><p class="my-5"><a href="/cleanDB" class="btn btn-primary">Clean database</a></p></td>
+            <td th:if="${testRunning}"><p class="my-5"><button disabled class="btn btn-primary">Clean traffic database</button></p></td>
+            <td th:if="${!testRunning}"><p class="my-5"><a href="/cleanTrafficDB" class="btn btn-primary">Clean traffic database</a></p></td>
+            <td th:if="${testRunning}"><p class="my-5"><button disabled class="btn btn-primary">Clean stock database</button></p></td>
+            <td th:if="${!testRunning}"><p class="my-5"><a href="/cleanStockDB" class="btn btn-primary">Clean stock database</a></p></td>
           </tr>
           </tbody>
         </table>
@@ -83,8 +86,8 @@
               th:onclick="'javascript:rowClicked(\'' + ${test.id} + '\');'">
             <td th:text="${test.id}"></td>
             <td th:text="${test.name}"></td>
-            <td th:text="${test.startDate}"></td>
-            <td th:text="${test.endDate}"></td>
+            <td th:text="${test.startTimestamp}"></td>
+            <td th:text="${test.endTimestamp}"></td>
             <td th:text="${test.finished}"></td>
           </tr>
           </tbody>

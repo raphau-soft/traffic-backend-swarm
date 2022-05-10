@@ -15,8 +15,6 @@ public class RunTestDTO {
     @Min(20)
     private int timeBetweenRequests;
     @Min(1)
-    private int numberOfUsers;
-    @Min(1000)
     private int testTime;
     @Min(1)
     private int requestsNumber;
@@ -28,13 +26,13 @@ public class RunTestDTO {
     private int third;
     private boolean requestLimit;
     private boolean timeLimit;
+    private int breakBetweenTrades;
 
     public RunTestDTO() {
     }
 
-    public RunTestDTO(int timeBetweenRequests, int numberOfUsers, int testTime, int requestsNumber, int first, int second, int third, boolean requestLimit, boolean timeLimit) {
+    public RunTestDTO(int timeBetweenRequests, int testTime, int requestsNumber, int first, int second, int third, boolean requestLimit, boolean timeLimit, int breakBetweenTrades) {
         this.timeBetweenRequests = timeBetweenRequests;
-        this.numberOfUsers = numberOfUsers;
         this.testTime = testTime;
         this.requestsNumber = requestsNumber;
         this.first = first;
@@ -42,6 +40,15 @@ public class RunTestDTO {
         this.third = third;
         this.requestLimit = requestLimit;
         this.timeLimit = timeLimit;
+        this.breakBetweenTrades = breakBetweenTrades;
+    }
+
+    public int getBreakBetweenTrades() {
+        return breakBetweenTrades;
+    }
+
+    public void setBreakBetweenTrades(int breakBetweenTrades) {
+        this.breakBetweenTrades = breakBetweenTrades;
     }
 
     public boolean isRequestLimit() {
@@ -84,9 +91,6 @@ public class RunTestDTO {
         this.timeBetweenRequests = timeBetweenRequests;
     }
 
-    public int getNumberOfUsers() {
-        return numberOfUsers;
-    }
 
     public int getFirst() {
         return first;
@@ -112,16 +116,11 @@ public class RunTestDTO {
         this.third = third;
     }
 
-    public void setNumberOfUsers(int numberOfUsers) {
-        this.numberOfUsers = numberOfUsers;
-    }
-
     @Override
     public String toString() {
         return "RunTestDTO{" +
                 "id=" + id +
                 ", timeBetweenRequests=" + timeBetweenRequests +
-                ", numberOfUsers=" + numberOfUsers +
                 ", testTime=" + testTime +
                 ", requestsNumber=" + requestsNumber +
                 ", first=" + first +

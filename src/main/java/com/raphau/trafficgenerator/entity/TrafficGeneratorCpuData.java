@@ -24,20 +24,27 @@ public class TrafficGeneratorCpuData {
     @Column(name = "cpu_usage")
     private Double cpuUsage;
 
+    @Column(name = "memory")
+    private Double memory;
+
     public TrafficGeneratorCpuData() {
     }
 
-
-
-    public TrafficGeneratorCpuData(int id, Test test, long timestamp, Double cpuUsage) {
-		super();
+	public TrafficGeneratorCpuData(int id, Test test, long timestamp, Double cpuUsage, Double memory) {
 		this.id = id;
 		this.test = test;
 		this.timestamp = timestamp;
 		this.cpuUsage = cpuUsage;
+		this.memory = memory;
 	}
 
+	public Double getMemory() {
+		return memory;
+	}
 
+	public void setMemory(Double memory) {
+		this.memory = memory;
+	}
 
 	public int getId() {
 		return id;

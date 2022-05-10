@@ -25,27 +25,14 @@ public class StockExchangeCpuData {
     @Column(name = "cpu_usage")
     private Double cpuUsage;
 
+	@Column(name = "memory")
+	private Double memory;
+
 	@Column(name = "stock_id")
 	private String stockId;
 
     public StockExchangeCpuData() {
     }
-
-	public StockExchangeCpuData(int id, Test test, long timestamp, Double cpuUsage) {
-		super();
-		this.id = id;
-		this.test = test;
-		this.timestamp = timestamp;
-		this.cpuUsage = cpuUsage;
-	}
-
-	public StockExchangeCpuData(int id, Test test, long timestamp, Double cpuUsage, String stockId) {
-		this.id = id;
-		this.test = test;
-		this.timestamp = timestamp;
-		this.cpuUsage = cpuUsage;
-		this.stockId = stockId;
-	}
 
 	public String getStockId() {
 		return stockId;
@@ -55,13 +42,30 @@ public class StockExchangeCpuData {
 		this.stockId = stockId;
 	}
 
+	public StockExchangeCpuData(int id, Test test, long timestamp, Double cpuUsage, Double memory, String stockId) {
+		this.id = id;
+		this.test = test;
+		this.timestamp = timestamp;
+		this.cpuUsage = cpuUsage;
+		this.memory = memory;
+		this.stockId = stockId;
+	}
+
 	public StockExchangeCpuData(CpuDataDTO cpuDataDTO, Test test) {
-		super();
 		this.id = 0;
 		this.test = test;
 		this.timestamp = cpuDataDTO.getTimestamp();
+		this.memory = cpuDataDTO.getMemory();
 		this.cpuUsage = cpuDataDTO.getCpuUsage();
 		this.stockId = cpuDataDTO.getStockId();
+	}
+
+	public Double getMemory() {
+		return memory;
+	}
+
+	public void setMemory(Double memory) {
+		this.memory = memory;
 	}
 
 	public int getId() {

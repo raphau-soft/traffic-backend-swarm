@@ -19,6 +19,9 @@ public class TrafficGeneratorTimeData {
     @JsonBackReference
     private Test test;
 
+	@Column(name = "api_time")
+	private Long apiTime;
+
     @Column(name = "application_time")
     private Long applicationTime;
 
@@ -27,12 +30,15 @@ public class TrafficGeneratorTimeData {
     
     @Column(name = "timestamp")
     private Long timestamp;
+
+    @Column(name = "queue_size_forward")
+    private int queueSizeForward;
+
+    @Column(name = "queue_size_back")
+    private int queueSizeBack;
     
     @Column(name = "endpoint_url")
     private String endpointUrl;
-
-    @Column(name = "method")
-    private String method;
 
 	@Column(name = "stock_id")
 	private String stockId;
@@ -40,15 +46,20 @@ public class TrafficGeneratorTimeData {
     public TrafficGeneratorTimeData() {
     }
 
-	public TrafficGeneratorTimeData(int id, Test test, Long applicationTime, Long databaseTime, Long timestamp, String endpointUrl, String method, String stockId) {
-		this.id = id;
-		this.test = test;
-		this.applicationTime = applicationTime;
-		this.databaseTime = databaseTime;
-		this.timestamp = timestamp;
-		this.endpointUrl = endpointUrl;
-		this.method = method;
-		this.stockId = stockId;
+	public int getQueueSizeForward() {
+		return queueSizeForward;
+	}
+
+	public void setQueueSizeForward(int queueSizeForward) {
+		this.queueSizeForward = queueSizeForward;
+	}
+
+	public int getQueueSizeBack() {
+		return queueSizeBack;
+	}
+
+	public void setQueueSizeBack(int queueSizeBack) {
+		this.queueSizeBack = queueSizeBack;
 	}
 
 	public void setApplicationTime(Long applicationTime) {
@@ -71,28 +82,36 @@ public class TrafficGeneratorTimeData {
 		this.stockId = stockId;
 	}
 
-	public TrafficGeneratorTimeData(int id, Test test, Long appTime, Long dbTime, Long timestamp, String endpointUrl,
-									String method) {
-		super();
+	public TrafficGeneratorTimeData(int id, Test test, Long apiTime, Long applicationTime, Long databaseTime, Long timestamp, int queueSizeForward, String endpointUrl) {
 		this.id = id;
 		this.test = test;
-		this.applicationTime = appTime;
-		this.databaseTime = dbTime;
+		this.apiTime = apiTime;
+		this.applicationTime = applicationTime;
+		this.databaseTime = databaseTime;
 		this.timestamp = timestamp;
+		this.queueSizeForward = queueSizeForward;
 		this.endpointUrl = endpointUrl;
-		this.method = method;
 	}
 
-	public TrafficGeneratorTimeData(TrafficGeneratorTimeDataDTO trafficGeneratorTimeDataDTO, Test test) {
-		super();
+	public void updateWithDTO(TrafficGeneratorTimeData trafficGeneratorTimeData, TrafficGeneratorTimeDataDTO trafficGeneratorTimeDataDTO, Test test) {
 		this.id = trafficGeneratorTimeDataDTO.getId();
 		this.test = test;
+		this.apiTime = System.currentTimeMillis() - trafficGeneratorTimeData.getApiTime();
 		this.applicationTime = trafficGeneratorTimeDataDTO.getApplicationTime();
 		this.databaseTime = trafficGeneratorTimeDataDTO.getDatabaseTime();
 		this.timestamp = trafficGeneratorTimeDataDTO.getTimestamp();
-		this.endpointUrl = trafficGeneratorTimeDataDTO.getEndpointUrl();
-		this.method = trafficGeneratorTimeDataDTO.getMethod();
+		this.endpointUrl = trafficGeneratorTimeData.getEndpointUrl();
 		this.stockId = trafficGeneratorTimeDataDTO.getStockId();
+		this.queueSizeBack = trafficGeneratorTimeDataDTO.getQueueSizeBack();
+		this.queueSizeForward = trafficGeneratorTimeData.getQueueSizeForward();
+	}
+
+	public Long getApiTime() {
+		return apiTime;
+	}
+
+	public void setApiTime(Long apiTime) {
+		this.apiTime = apiTime;
 	}
 
 	public int getId() {
@@ -143,14 +162,6 @@ public class TrafficGeneratorTimeData {
 		this.endpointUrl = endpointUrl;
 	}
 
-	public String getMethod() {
-		return method;
-	}
-
-	public void setMethod(String method) {
-		this.method = method;
-	}
-
 	@Override
 	public String toString() {
 		return "TrafficGeneratorTimeData{" +
@@ -160,7 +171,6 @@ public class TrafficGeneratorTimeData {
 				", dbTime=" + databaseTime +
 				", timestamp=" + timestamp +
 				", endpointUrl='" + endpointUrl + '\'' +
-				", method='" + method + '\'' +
 				'}';
 	}
 }

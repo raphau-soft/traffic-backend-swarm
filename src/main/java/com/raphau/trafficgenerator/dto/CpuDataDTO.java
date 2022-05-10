@@ -8,16 +8,27 @@ public class CpuDataDTO {
 
     private Double cpuUsage;
 
+	private Double memory;
+
 	private String stockId;
 
-	public CpuDataDTO(long timestamp, Double cpuUsage, String stockId) {
+	public CpuDataDTO(long timestamp, Double cpuUsage, Double memory, String stockId) {
 		this.timestamp = timestamp;
 		this.cpuUsage = cpuUsage;
+		this.memory = memory;
 		this.stockId = stockId;
 	}
 
 	public CpuDataDTO() {
     }
+
+	public Double getMemory() {
+		return memory;
+	}
+
+	public void setMemory(Double memory) {
+		this.memory = memory;
+	}
 
 	public String getStockId() {
 		return stockId;

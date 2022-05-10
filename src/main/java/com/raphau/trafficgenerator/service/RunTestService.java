@@ -16,21 +16,26 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 
 @Service
+@ConfigurationProperties(prefix = "stock.exchange")
 public class RunTestService {
     private static final Logger log = LoggerFactory.getLogger(TestController.class);
-    public static RunTestDTO runTestDTO = new RunTestDTO(1000, 50, 1800, 80, 50, 0, 0, false, true);
+    public static RunTestDTO runTestDTO = new RunTestDTO(1000, 1800, 80, 50, 0, 0, false, true, 180);
     private final OperatingSystemMXBean bean = ManagementFactory.getOperatingSystemMXBean();
     public static int processNumber = 0;
     public static Semaphore register;
@@ -38,7 +43,7 @@ public class RunTestService {
     public static boolean testRunning = false;
     public static TestDTO testDTO;
     public static int registered;
-    public static int validated;
+    public static int validator;
 
     @Autowired
     private AsyncService asyncService;
@@ -58,10 +63,7 @@ public class RunTestService {
     @Autowired
     private List<Queue> rabbitQueues;
 
-    @Autowired
-    private RabbitTemplate rabbitTemplate;
-
-    public void asyncTest() throws Exception {
+    public void asyncTest() {
         log.info("Test is starting");
         registered = 0;
         Test test = new Test(0, generateTestName(), System.currentTimeMillis(), null, false);
@@ -74,9 +76,10 @@ public class RunTestService {
 
         asyncService.setEndWork(false);
         log.info("Purging all queues...");
-        for(Queue queue: rabbitQueues) {
+        for (Queue queue : rabbitQueues) {
             admin.purgeQueue(queue.getName());
         }
+
         List<JSONObject> objects = Collections.synchronizedList(new ArrayList<>());
         List<JSONObject> users = Collections.synchronizedList(new ArrayList<>());
         List<Semaphore> semaphores = Collections.synchronizedList(new ArrayList<>());
@@ -84,65 +87,83 @@ public class RunTestService {
         users.add(null);
         semaphores.add(null);
         register = new Semaphore(1);
-        asyncService.clearStockDB();
-        for(int i = 1; i <= runTestDTO.getNumberOfUsers(); i++){
+        try {
+            asyncService.clearStockDB();
+        } catch (InterruptedException e) {
+            return;
+        }
+        int numberOfUsers = runTestDTO.getFirst() + runTestDTO.getSecond() + runTestDTO.getThird();
+        for (int i = 1; i <= numberOfUsers; i++) {
             objects.add(null);
             users.add(null);
             semaphores.add(new Semaphore(1));
-            asyncService.postRegistration(""+i);
+            try {
+                asyncService.postRegistration("" + i);
+            } catch (InterruptedException e) {
+                return;
+            }
         }
 
-        log.info("Waiting for all user's to register, users: " + runTestDTO.getNumberOfUsers() + " registered: " + registered);
-        while(registered < runTestDTO.getNumberOfUsers()) {
-            Thread.sleep(3000);
-            log.info("Waiting for all user's to register, users: " + runTestDTO.getNumberOfUsers() + " registered: " + registered);
+        log.info("Waiting for all user's to register, users: " + numberOfUsers + " registered: " + registered);
+        while (registered < numberOfUsers) {
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                return;
+            }
+            log.info("Waiting for all user's to register, users: " + numberOfUsers + " registered: " + registered);
         }
 
         asyncService.setStockData(objects);
         asyncService.setUsersAndCompanies(users);
         AsyncService.semaphores = semaphores;
 
-        for(int i = 1; i <= runTestDTO.getFirst(); i++){
-            asyncService.runTests("" + i, runTestDTO, 1);
-            processNumber++;
+        for (int i = 1; i <= runTestDTO.getFirst(); i++) {
+            try {
+                asyncService.runTests("" + i, runTestDTO, 1);
+                processNumber++;
+            } catch (Exception e) {
+                log.info("User " + i + " failed to start");
+            }
         }
-        for(int i = 1; i <= runTestDTO.getSecond(); i++){
-            asyncService.runTests("" + i, runTestDTO, 2);
-            processNumber++;
+        for (int i = 1; i <= runTestDTO.getSecond(); i++) {
+            try {
+                asyncService.runTests("" + i, runTestDTO, 2);
+                processNumber++;
+            } catch (Exception e) {
+                log.info("User " + i + " failed to start");
+            }
         }
-        for(int i = 1; i <= runTestDTO.getThird(); i++){
-            asyncService.runTests("" + i, runTestDTO, 3);
-            processNumber++;
+        for (int i = 1; i <= runTestDTO.getThird(); i++) {
+            try {
+                asyncService.runTests("" + i, runTestDTO, 3);
+                processNumber++;
+            } catch (Exception e) {
+                log.info("User " + i + " failed to start");
+            }
         }
         testRunning = true;
     }
 
-    @Scheduled(cron = "0 */1 * * * ?")
+    @Scheduled(fixedDelay = 60000)
     @Transactional
-    public void checkTestStatus() {
-        if(!testRunning || AsyncService.trading) return;
+    public void checkTestStatus() throws InterruptedException {
+        if (!testRunning) return;
         collectCpuData();
-        if(runTestDTO.isTimeLimit()) {
-            long currentTime = System.currentTimeMillis();
-            long testEndTime = testDTO.getStartTimestamp().getTime() + testDTO.getTestTime() * 1000L;
-            if(currentTime < testEndTime) return;
-            asyncService.setEndWork(true);
+        if (runTestDTO.isTimeLimit()) {
+            ZoneId zoneId = ZoneId.systemDefault();
+            long currentTime = new Date().getTime();
+            long testEndTime = (testDTO.getStartTimestamp().atZone(zoneId).toEpochSecond() + testDTO.getTestTime()) * 1000L;
+            if (currentTime < testEndTime) return;
+            asyncService.sendFinishTrading();
+            stopTest();
+        } else if (processNumber == 0) {
+            stopTest();
         }
-        if(processNumber > 0) return;
-        log.info("Test is going to be finished...");
-        Optional<Test> testOptional = testRepository.findById(testDTO.getId());
-        if(!testOptional.isPresent()) {
-            testRunning = false;
-            return;
-        }
-        Test test = testOptional.get();
-        test.setEndTimestamp(System.currentTimeMillis());
-        test.setFinished(true);
-        testRepository.save(test);
-        testRunning = false;
     }
 
     public void collectCpuData() {
+        double memoryUsage = ((double) Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / Runtime.getRuntime().totalMemory();
         for (Method method : bean.getClass().getDeclaredMethods()) {
             method.setAccessible(true);
             if (method.getName().startsWith("getSystem")
@@ -155,30 +176,34 @@ public class RunTestService {
                 }
 
                 Optional<Test> testOptional = testRepository.findById(testDTO.getId());
-                if(!testOptional.isPresent()) return;
+                if (!testOptional.isPresent()) return;
                 Test test = testOptional.get();
-                TrafficGeneratorCpuData cpuData = new TrafficGeneratorCpuData(0, test, System.currentTimeMillis(), (Double) value);
+                TrafficGeneratorCpuData cpuData = new TrafficGeneratorCpuData(0, test, System.currentTimeMillis(), (Double) value, memoryUsage);
                 cpuDataRepository.save(cpuData);
             }
         }
     }
 
     public void stopTest() throws InterruptedException {
+        int tries = 0;
         asyncService.setEndWork(true);
         log.info("Waiting for test to end. Active users: " + processNumber);
         while (processNumber != 0) {
             Thread.sleep(3000);
-            log.info("Waiting for test to end. Active users: " + processNumber);
+            if (tries >= 40) break;
+            tries++;
+            log.info("Waiting for test to end. Active users: " + processNumber + " try: " + tries);
         }
+        processNumber = 0;
         int messageCount = getMessageCount();
         log.info("Waiting for offers to process...");
-        while(messageCount > 0) {
+        while (messageCount > 0) {
             Thread.sleep(3000);
             messageCount = getMessageCount();
             log.info("Offers while processing: " + messageCount);
         }
         Optional<Test> testOptional = testRepository.findById(testDTO.getId());
-        if(!testOptional.isPresent()) {
+        if (!testOptional.isPresent()) {
             testRunning = false;
             asyncService.setEndWork(true);
             return;
@@ -191,29 +216,10 @@ public class RunTestService {
         log.info("Test finished");
     }
 
-    @Scheduled(fixedDelay = 300000)
-    public void trade() throws InterruptedException {
-        if (!RunTestService.testRunning) return;
-        AsyncService.trading = true;
-        int messageCount = getMessageCount();
-        log.info("Trying to send trade tick...");
-        while(messageCount > 0) {
-            Thread.sleep(3000);
-            messageCount = getMessageCount();
-            log.info("Offers while processing: " + messageCount);
-        }
-        Thread.sleep(10000);
-        log.info("Offers processed - sending trade tick");
-        trade.acquire();
-        this.rabbitTemplate.convertAndSend("trade-request-exchange", "foo.bar.#", "0");
-        trade.acquire();
-        trade.release();
-    }
-
     private int getMessageCount() {
         Properties props;
         int count = 0;
-        for(Queue queue : rabbitQueues) {
+        for (Queue queue : rabbitQueues) {
             props = admin.getQueueProperties(queue.getName());
             assert props != null;
             count += Integer.parseInt(props.get("QUEUE_MESSAGE_COUNT").toString());

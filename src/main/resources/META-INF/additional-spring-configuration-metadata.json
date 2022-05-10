@@ -1,0 +1,8 @@
+{
+  "properties": [
+    {
+      "name": "stock.exchange.trading.delay",
+      "type": "java.lang.String",
+      "description": "Description for stock.exchange.trading.delay."
+    }
+  ] }

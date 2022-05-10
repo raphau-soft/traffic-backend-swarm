@@ -25,9 +25,6 @@ public class TestParameters {
     @Column(name = "number_of_requests")
     private int number_of_requests;
 
-    @Column(name = "number_of_users")
-    private int number_of_users;
-
     @Column(name = "test_time")
     private int test_time;
     
@@ -44,6 +41,8 @@ public class TestParameters {
 	private boolean requestLimit;
 	@Column(name = "time_limit")
 	private boolean timeLimit;
+	@Column(name = "break_between_trades")
+	private int breakBetweenTrades;
     
     
     public TestParameters() {
@@ -51,7 +50,6 @@ public class TestParameters {
 
     public TestParameters(RunTestDTO runTestDTO) {
     	this.number_of_requests = runTestDTO.getRequestsNumber();
-    	this.number_of_users = runTestDTO.getNumberOfUsers();
     	this.test_time = runTestDTO.getTestTime();
     	this.time_between_requests = runTestDTO.getTimeBetweenRequests();
     	this.first = runTestDTO.getFirst();
@@ -67,9 +65,16 @@ public class TestParameters {
 		this.id = id;
 		this.test = test;
 		this.number_of_requests = number_of_requests;
-		this.number_of_users = number_of_users;
 		this.test_time = test_time;
 		this.time_between_requests = time_between_requests;
+	}
+
+	public int getBreakBetweenTrades() {
+		return breakBetweenTrades;
+	}
+
+	public void setBreakBetweenTrades(int breakBetweenTrades) {
+		this.breakBetweenTrades = breakBetweenTrades;
 	}
 
 	public boolean isRequestLimit() {
@@ -141,17 +146,6 @@ public class TestParameters {
 		this.number_of_requests = number_of_requests;
 	}
 
-
-	public int getNumber_of_users() {
-		return number_of_users;
-	}
-
-
-	public void setNumber_of_users(int number_of_users) {
-		this.number_of_users = number_of_users;
-	}
-
-
 	public int getTest_time() {
 		return test_time;
 	}
@@ -177,7 +171,6 @@ public class TestParameters {
 				"id=" + id +
 				", test=" + test +
 				", number_of_requests=" + number_of_requests +
-				", number_of_users=" + number_of_users +
 				", test_time=" + test_time +
 				", time_between_requests=" + time_between_requests +
 				'}';

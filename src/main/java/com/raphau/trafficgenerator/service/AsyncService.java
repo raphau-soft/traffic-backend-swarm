@@ -8,10 +8,14 @@ import com.raphau.trafficgenerator.dao.TrafficGeneratorTimeDataRepository;
 import com.raphau.trafficgenerator.dto.*;
 import com.raphau.trafficgenerator.entity.Test;
 import com.raphau.trafficgenerator.entity.TrafficGeneratorTimeData;
+import io.swagger.models.auth.In;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueInformation;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
@@ -36,6 +40,10 @@ public class AsyncService {
     public static List<Semaphore> semaphores;
     private boolean endWork = false;
     public static boolean trading = false;
+
+    public boolean isEndWork() {
+        return endWork;
+    }
 
     public List<JSONObject> getUsersAndCompanies() {
         return usersAndCompanies;
@@ -66,30 +74,51 @@ public class AsyncService {
     @Autowired
     private TrafficGeneratorTimeDataRepository trafficGeneratorTimeDataRepository;
 
+    @Autowired
+    private RabbitAdmin admin;
+
     @Async("asyncExecutor")
-    public void runTests(String username, RunTestDTO runTestDTO, int strategy) throws JSONException,
-            InterruptedException {
+    public void runTests(String username, RunTestDTO runTestDTO, int strategy) {
         int requestsNumber = 0;
         Gson gson = new Gson();
         int user = Integer.parseInt(username);
 
-        getStockData(user);
-        semaphores.get(user).acquire();
+        try {
+            getStockData(user);
+            semaphores.get(user).acquire();
+        } catch (InterruptedException e) {
+            RunTestService.processNumber--;
+            log.info(username + " ending, @@@ process number: " + RunTestService.processNumber);
+            return;
+        }
         semaphores.get(user).release();
 
         JSONObject jsonObject = stockData.get(user);
         Type stockListType = new TypeToken<ArrayList<Stock>>() {}.getType();
-        List<Stock> stocks = gson.fromJson(jsonObject.get("stock").toString(), stockListType);
+        List<Stock> stocks;
+        try {
+            stocks = gson.fromJson(jsonObject.get("stock").toString(), stockListType);
+        } catch(JSONException e) {
+            RunTestService.processNumber--;
+            log.info(username + " ending, @@@ process number: " + RunTestService.processNumber);
+            return;
+        }
         stockData.set(user, null);
-        if (stocks.isEmpty()){
+        if (stocks != null && stocks.isEmpty()){
             createCompany(username);
         }
-        log.info("User: " + username + ", strategy: " + strategy);
+        log.debug("User: " + username + ", strategy: " + strategy);
         if (strategy == 1) {
             boolean buy = true;
             for (; ; ) {
                 while(trading) {
-                    Thread.sleep(3000);
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException e) {
+                        RunTestService.processNumber--;
+                        log.info(username + " ending, @@@ process number: " + RunTestService.processNumber);
+                        return;
+                    }
                 }
                 if (buy)
                     requestsNumber = sellAllStocks(username, requestsNumber, runTestDTO);
@@ -103,13 +132,25 @@ public class AsyncService {
                     }
                     return;
                 }
-                Thread.sleep(runTestDTO.getTimeBetweenRequests());
+                try {
+                    Thread.sleep(runTestDTO.getTimeBetweenRequests());
+                } catch (InterruptedException e) {
+                    RunTestService.processNumber--;
+                    log.info(username + " ending, @@@ process number: " + RunTestService.processNumber);
+                    return;
+                }
             }
         } else if (strategy == 2) {
             boolean buy = true;
             for (; ; ) {
                 while(trading) {
-                    Thread.sleep(3000);
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException e) {
+                        RunTestService.processNumber--;
+                        log.info(username + " ending, @@@ process number: " + RunTestService.processNumber);
+                        return;
+                    }
                 }
                 if (buy)
                     sellOneStock(username);
@@ -125,18 +166,42 @@ public class AsyncService {
                     }
                     return;
                 }
-                Thread.sleep(runTestDTO.getTimeBetweenRequests());
+                try {
+                    Thread.sleep(runTestDTO.getTimeBetweenRequests());
+                } catch (InterruptedException e) {
+                    RunTestService.processNumber--;
+                    log.info(username + " ending, @@@ process number: " + RunTestService.processNumber);
+                    return;
+                }
             }
         } else {
             for (; ; ) {
                 while(trading) {
-                    Thread.sleep(3000);
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException e) {
+                        RunTestService.processNumber--;
+                        log.info(username + " ending, @@@ process number: " + RunTestService.processNumber);
+                        return;
+                    }
                 }
                 int random = new Random().nextInt() % 2;
                 if (random == 0) {
-                    getStockData(user);
+                    try {
+                        getStockData(user);
+                    } catch (InterruptedException e) {
+                        RunTestService.processNumber--;
+                        log.info(username + " ending, @@@ process number: " + RunTestService.processNumber);
+                        return;
+                    }
                 } else {
-                    getUsersAndCompanies(user);
+                    try {
+                        getUsersAndCompanies(user);
+                    } catch (InterruptedException e) {
+                        RunTestService.processNumber--;
+                        log.info(username + " ending, @@@ process number: " + RunTestService.processNumber);
+                        return;
+                    }
                 }
                 requestsNumber++;
                 if (runTestDTO.isRequestLimit() && requestsNumber >= runTestDTO.getRequestsNumber() || endWork) {
@@ -146,26 +211,41 @@ public class AsyncService {
                     }
                     return;
                 }
-                Thread.sleep(runTestDTO.getTimeBetweenRequests());
+                try {
+                    Thread.sleep(runTestDTO.getTimeBetweenRequests());
+                } catch (InterruptedException e) {
+                    RunTestService.processNumber--;
+                    log.info(username + " ending, @@@ process number: " + RunTestService.processNumber);
+                    return;
+                }
             }
         }
     }
 
-    private void sellOneStock(String username) throws JSONException, InterruptedException {
+    private void sellOneStock(String username) {
         Gson gson = new GsonBuilder()
                 .registerTypeAdapter(Date.class, getUnixEpochDateTypeAdapter())
                 .create();
         int user = Integer.parseInt(username);
 
-        getStockData(user);
+        try {
+            getStockData(user);
+            semaphores.get(user).acquire();
+        } catch (InterruptedException e) {
+            return;
+        }
 
-        semaphores.get(user).acquire();
         semaphores.get(user).release();
 
         JSONObject jsonObject = stockData.get(user);
         stockData.set(user, null);
         Type stockListType = new TypeToken<ArrayList<Stock>>() {}.getType();
-        List<Stock> stocks = gson.fromJson(jsonObject.get("stock").toString(), stockListType);
+        List<Stock> stocks;
+        try {
+            stocks = gson.fromJson(jsonObject.get("stock").toString(), stockListType);
+        } catch (JSONException e) {
+            return;
+        }
         if (stocks.size() <= 0) return;
 
         int randomStock = (int) (Math.random() * 100.0 % stocks.size());
@@ -173,8 +253,13 @@ public class AsyncService {
         int stockAmountToSell =  (stock.getAmount() - 1) % (int)(Math.random() * 100 + 1) + 1;
         Company company = stock.getCompany();
         Type stockRateListType = new TypeToken<ArrayList<StockRate>>() {}.getType();
-        List<StockRate> stockRates = gson.fromJson(jsonObject.get("stockRates")
-                .toString(), stockRateListType);
+        List<StockRate> stockRates;
+        try {
+            stockRates = gson.fromJson(jsonObject.get("stockRates")
+                    .toString(), stockRateListType);
+        } catch (JSONException e) {
+            return;
+        }
         StockRate stockRateTemp = new StockRate();
         stockRateTemp.setCompany(company);
         int stockRateNum = stockRates.indexOf(stockRateTemp);
@@ -184,24 +269,38 @@ public class AsyncService {
                 + rate * 0.8), 2);
         createSellOffer(username, company.getId(), stockAmountToSell, price);
         if (endWork || trading) return;
-        Thread.sleep(RunTestService.runTestDTO.getTimeBetweenRequests());
+        try {
+            Thread.sleep(RunTestService.runTestDTO.getTimeBetweenRequests());
+        } catch(InterruptedException ignored) {
+        }
     }
 
-    private int sellAllStocks(String username, int requestsNumber, RunTestDTO runTestDTO) throws JSONException, InterruptedException {
+    private int sellAllStocks(String username, int requestsNumber, RunTestDTO runTestDTO) {
         Gson gson = new GsonBuilder()
                 .registerTypeAdapter(Date.class, getUnixEpochDateTypeAdapter())
                 .create();
         int user = Integer.parseInt(username);
 
-        getStockData(user);
+        try {
+            getStockData(user);
+            semaphores.get(user).acquire();
+        } catch (InterruptedException e) {
+            return 1;
+        }
 
-        semaphores.get(user).acquire();
         semaphores.get(user).release();
 
         JSONObject jsonObject = stockData.get(user);
         stockData.set(user, null);
         Type stockListType = new TypeToken<ArrayList<Stock>>() {}.getType();
-        List<Stock> stocks = gson.fromJson(jsonObject.get("stock").toString(), stockListType);
+
+        List<Stock> stocks;
+        try {
+            stocks = gson.fromJson(jsonObject.get("stock").toString(), stockListType);
+        } catch(JSONException e) {
+            return 1;
+        }
+
         if (stocks.size() <= 0) return requestsNumber;
         for (Stock stock : stocks) {
             int stockAmountToSell = stock.getAmount();
@@ -211,8 +310,12 @@ public class AsyncService {
             }
             Company company = stock.getCompany();
             Type stockRateListType = new TypeToken<ArrayList<StockRate>>() {}.getType();
-            List<StockRate> stockRates = gson.fromJson(jsonObject.get("stockRates")
-                    .toString(), stockRateListType);
+            List<StockRate> stockRates;
+            try {
+                stockRates = gson.fromJson(jsonObject.get("stockRates").toString(), stockRateListType);
+            } catch(JSONException e) {
+                return 1;
+            }
             StockRate stockRateTemp = new StockRate();
             stockRateTemp.setCompany(company);
             int stockRateNum = stockRates.indexOf(stockRateTemp);
@@ -226,33 +329,55 @@ public class AsyncService {
                 requestsNumber++;
             stock.setAmount(0);
             if (runTestDTO.isRequestLimit() && requestsNumber >= runTestDTO.getRequestsNumber() || endWork || trading) return requestsNumber;
-            Thread.sleep(RunTestService.runTestDTO.getTimeBetweenRequests());
+            try {
+                Thread.sleep(RunTestService.runTestDTO.getTimeBetweenRequests());
+            } catch (InterruptedException e) {
+                return 1;
+            }
             if (runTestDTO.isRequestLimit() && requestsNumber >= runTestDTO.getRequestsNumber() || endWork || trading) return requestsNumber;
         }
         return requestsNumber;
     }
 
-    private void buyOneStock(String username) throws JSONException, InterruptedException {
+    private void buyOneStock(String username) {
         Gson gson = new GsonBuilder()
                 .registerTypeAdapter(Date.class, getUnixEpochDateTypeAdapter())
                 .create();
 
         int userInt = Integer.parseInt(username);
 
-        getUsersAndCompanies(userInt);
+        try {
+            getUsersAndCompanies(userInt);
+            semaphores.get(userInt).acquire();
+        } catch (InterruptedException e) {
+            return;
+        }
 
-        semaphores.get(userInt).acquire();
         semaphores.get(userInt).release();
 
         JSONObject jsonObject = usersAndCompanies.get(userInt);
         usersAndCompanies.set(userInt, null);
-
-        User user = gson.fromJson(jsonObject.get("user").toString(), User.class);
+        User user;
+        try {
+            user = gson.fromJson(jsonObject.get("user").toString(), User.class);
+        } catch (JSONException e) {
+            return;
+        }
         double money = user.getMoney();
         Type companyListType = new TypeToken<ArrayList<Company>>() {}.getType();
-        List<Company> companies = gson.fromJson(jsonObject.get("companies").toString(), companyListType);
+        List<Company> companies;
+        try {
+            companies = gson.fromJson(jsonObject.get("companies").toString(), companyListType);
+        } catch (JSONException e) {
+            return;
+        }
         Type stockRateListType = new TypeToken<ArrayList<StockRate>>() {}.getType();
-        List<StockRate> stockRates = gson.fromJson(jsonObject.get("stockRates").toString(), stockRateListType);
+        List<StockRate> stockRates;
+        try {
+            stockRates = gson.fromJson(jsonObject.get("stockRates").toString(), stockRateListType);
+        } catch (JSONException e) {
+            return;
+        }
         StockRate stockRateTemp = new StockRate();
         if(companies.size() == 0) return;
         int randomCompany = (int) (Math.random() * 100.0 % companies.size());
@@ -266,31 +391,53 @@ public class AsyncService {
         int amount = (int) Math.round(Math.random() * 100.f % (money / price / 10)) + 1;
         createBuyOffer(username, company.getId(), amount, price);
         if (endWork || trading) return;
-        Thread.sleep(RunTestService.runTestDTO.getTimeBetweenRequests());
+        try {
+            Thread.sleep(RunTestService.runTestDTO.getTimeBetweenRequests());
+        } catch (InterruptedException ignored) {
+
+        }
     }
 
-    private int buyStocksUntilHaveMoney(String username, int requestsNumber, RunTestDTO runTestDTO) throws JSONException, InterruptedException {
+    private int buyStocksUntilHaveMoney(String username, int requestsNumber, RunTestDTO runTestDTO) {
         Gson gson = new GsonBuilder()
                 .registerTypeAdapter(Date.class, getUnixEpochDateTypeAdapter())
                 .create();
 
         int userInt = Integer.parseInt(username);
+        try {
+            getUsersAndCompanies(userInt);
+            semaphores.get(userInt).acquire();
+        } catch(InterruptedException e) {
+            return 1;
+        }
 
-        getUsersAndCompanies(userInt);
-
-        semaphores.get(userInt).acquire();
         semaphores.get(userInt).release();
 
         JSONObject jsonObject = usersAndCompanies.get(userInt);
         usersAndCompanies.set(userInt, null);
 
-        User user = gson.fromJson(jsonObject.get("user").toString(), User.class);
+        User user;
+        try {
+            user = gson.fromJson(jsonObject.get("user").toString(), User.class);
+        } catch(JSONException e) {
+            return 1;
+        }
         double money = user.getMoney();
         Type companyListType = new TypeToken<ArrayList<Company>>() {}.getType();
-        List<Company> companies = gson.fromJson(jsonObject.get("companies").toString(), companyListType);
+        List<Company> companies;
+        try{
+            companies = gson.fromJson(jsonObject.get("companies").toString(), companyListType);
+        } catch(JSONException e) {
+            return 1;
+        }
         Type stockRateListType = new TypeToken<ArrayList<StockRate>>() {}.getType();
-        List<StockRate> stockRates = gson.fromJson(jsonObject.get("stockRates")
-                .toString(), stockRateListType);
+        List<StockRate> stockRates;
+        try{
+            stockRates = gson.fromJson(jsonObject.get("stockRates")
+                    .toString(), stockRateListType);
+        } catch(JSONException e) {
+            return 1;
+        }
         StockRate stockRateTemp = new StockRate();
         mainLoop:
         for (; ; ) {
@@ -308,7 +455,11 @@ public class AsyncService {
                     requestsNumber++;
                 money -= price * amount;
                 if (runTestDTO.isRequestLimit() && requestsNumber >= runTestDTO.getRequestsNumber() || endWork || trading) return requestsNumber;
-                Thread.sleep(RunTestService.runTestDTO.getTimeBetweenRequests());
+                try {
+                    Thread.sleep(RunTestService.runTestDTO.getTimeBetweenRequests());
+                } catch(InterruptedException e) {
+                    return 1;
+                }
                 if (runTestDTO.isRequestLimit() && requestsNumber >= runTestDTO.getRequestsNumber() || endWork || trading) return requestsNumber;
             }
         }
@@ -317,14 +468,25 @@ public class AsyncService {
 
     public void postRegistration(String username) throws InterruptedException {
         RunTestService.register.acquire();
-        log.info("Register user: " + username);
-        this.rabbitTemplate.convertAndSend("register-request-exchange", "foo.bar.#", username);
+        Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
+        QueueInformation information = admin.getQueueInfo("register-request");
+        assert information != null;
+        TrafficGeneratorTimeData trafficGeneratorTimeData = new TrafficGeneratorTimeData(0, test, System.currentTimeMillis(), null, null, System.currentTimeMillis(), information.getMessageCount(), "do-register");
+        trafficGeneratorTimeDataRepository.saveAndFlush(trafficGeneratorTimeData);
+        log.debug("Register user: " + username);
+        this.rabbitTemplate.convertAndSend("register-request-exchange", "foo.bar.#", new GetDataDTO(username, trafficGeneratorTimeData.getId()));
     }
 
     public void clearStockDB() throws InterruptedException {
         RunTestService.register.acquire();
         log.info("Clearing stock database");
         this.rabbitTemplate.convertAndSend("trade-request-exchange", "foo.bar.#", "1");
+    }
+
+    public void sendFinishTrading() {
+        log.info("Sending finish trading tick");
+        for(int i = 0; i < 10; i++)
+            this.rabbitTemplate.convertAndSend("trade-request-exchange", "foo.bar.#", "2");
     }
 
     void createCompany(String username) {
@@ -341,54 +503,60 @@ public class AsyncService {
         int amount = Math.abs(new Random().nextInt() % 1500) + 50;
         double price = Math.round(new Random().nextDouble() * 10000) / 100.0;
         Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
-        TrafficGeneratorTimeData trafficGeneratorTimeData = new TrafficGeneratorTimeData(
-                0, test, null, null, null, "add-company", "POST"
-
-        );
+        QueueInformation information = admin.getQueueInfo("company-request");
+        assert information != null;
+        TrafficGeneratorTimeData trafficGeneratorTimeData = new TrafficGeneratorTimeData(0, test, System.currentTimeMillis(), null, null, System.currentTimeMillis(), information.getMessageCount(), "add-company");
         trafficGeneratorTimeDataRepository.saveAndFlush(trafficGeneratorTimeData);
         this.rabbitTemplate.convertAndSend("company-exchange", "foo.bar.#", new CompanyDTO(0, username, name, amount, price, trafficGeneratorTimeData.getId()));
     }
 
     public static double round(double value, int places) {
-        if (places < 0) throw new IllegalArgumentException();
-
+        if (places < 0) places = 0;
         BigDecimal bd = BigDecimal.valueOf(value);
         bd = bd.setScale(places, RoundingMode.HALF_UP);
         return bd.doubleValue();
     }
 
     void createBuyOffer(String username, int companyId, int amount, double price) {
-        log.info("User " + username + " sent create buy offer request");
+        log.debug("User " + username + " sent create buy offer request");
         Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
-        TrafficGeneratorTimeData trafficGeneratorTimeData = new TrafficGeneratorTimeData(
-                0, test, null, null, null, "add-buy-offer", "POST"
-
-        );
+        QueueInformation information = admin.getQueueInfo("buy-offer-request");
+        assert information != null;
+        TrafficGeneratorTimeData trafficGeneratorTimeData = new TrafficGeneratorTimeData(0, test, System.currentTimeMillis(), null, null, System.currentTimeMillis(), information.getMessageCount(), "add-buy-offer");
         trafficGeneratorTimeDataRepository.saveAndFlush(trafficGeneratorTimeData);
         this.rabbitTemplate.convertAndSend("buy-offer-exchange", "foo.bar.#", new BuyOfferDTO(0, username, companyId, BigDecimal.valueOf(price), amount, new Date(), trafficGeneratorTimeData.getId()));
     }
 
     void createSellOffer(String username, int companyId, int amount, double price) {
-        log.info("User " + username + " sent create sell offer request");
+        log.debug("User " + username + " sent create sell offer request");
         Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
-        TrafficGeneratorTimeData trafficGeneratorTimeData = new TrafficGeneratorTimeData(
-                0, test, null, null, null, "add-sell-offer", "POST"
-
-        );
+        QueueInformation information = admin.getQueueInfo("sell-offer-request");
+        assert information != null;
+        TrafficGeneratorTimeData trafficGeneratorTimeData = new TrafficGeneratorTimeData(0, test, System.currentTimeMillis(), null, null, System.currentTimeMillis(), information.getMessageCount(), "add-sell-offer");
         trafficGeneratorTimeDataRepository.saveAndFlush(trafficGeneratorTimeData);
         this.rabbitTemplate.convertAndSend("sell-offer-exchange", "foo.bar.#", new SellOfferDTO(0, username, companyId, BigDecimal.valueOf(price), amount, new Date(), trafficGeneratorTimeData.getId()));
     }
 
     private void getStockData(int user) throws InterruptedException {
         semaphores.get(user).acquire();
-        log.info("User " + user + " sent stock data request");
-        this.rabbitTemplate.convertAndSend("stock-data-exchange", "foo.bar.#", user);
+        Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
+        log.debug("User " + user + " sent stock data request");
+        QueueInformation information = admin.getQueueInfo("stock-data-request");
+        assert information != null;
+        TrafficGeneratorTimeData trafficGeneratorTimeData = new TrafficGeneratorTimeData(0, test, System.currentTimeMillis(), null, null, System.currentTimeMillis(), information.getMessageCount(), "get-stock-data");
+        trafficGeneratorTimeDataRepository.saveAndFlush(trafficGeneratorTimeData);
+        this.rabbitTemplate.convertAndSend("stock-data-exchange", "foo.bar.#", new GetDataDTO(String.valueOf(user), trafficGeneratorTimeData.getId()));
     }
 
     public void getUsersAndCompanies(int user) throws InterruptedException {
         semaphores.get(user).acquire();
-        log.info("User " + user + " sent user and companies data request");
-        this.rabbitTemplate.convertAndSend("user-data-exchange", "foo.bar.#", user);
+        Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
+        log.debug("User " + user + " sent user and companies data request");
+        QueueInformation information = admin.getQueueInfo("user-data-request");
+        assert information != null;
+        TrafficGeneratorTimeData trafficGeneratorTimeData = new TrafficGeneratorTimeData(0, test, System.currentTimeMillis(), null, null, System.currentTimeMillis(), information.getMessageCount(), "get-stock-users-and-companies");
+        trafficGeneratorTimeDataRepository.saveAndFlush(trafficGeneratorTimeData);
+        this.rabbitTemplate.convertAndSend("user-data-exchange", "foo.bar.#", new GetDataDTO(String.valueOf(user), trafficGeneratorTimeData.getId()));
     }
 
 }

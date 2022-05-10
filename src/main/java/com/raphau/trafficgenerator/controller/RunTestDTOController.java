@@ -1,19 +1,23 @@
 package com.raphau.trafficgenerator.controller;
 
+import com.raphau.trafficgenerator.configuration.SchemaHandler;
 import com.raphau.trafficgenerator.dao.*;
 import com.raphau.trafficgenerator.dto.RunTestDTO;
 import com.raphau.trafficgenerator.dto.TestDTO;
 import com.raphau.trafficgenerator.entity.*;
-import com.raphau.trafficgenerator.service.AsyncService;
 import com.raphau.trafficgenerator.service.RunTestService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
-import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -24,8 +28,6 @@ import org.supercsv.prefs.CsvPreference;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -53,22 +55,38 @@ public class RunTestDTOController {
     @Autowired
     private TrafficGeneratorTimeDataRepository trafficGeneratorTimeDataRepository;
 
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
+    @Autowired
+    private SchemaHandler schemaHandler;
+
     @GetMapping("/index")
     public String index(Model model) {
         List<Test> tests = testRepository.findAll();
         List<TestDTO> testDTOS = tests.stream().map(TestDTO::new).collect(Collectors.toList());
+
         model.addAttribute("runTestDTO", RunTestService.runTestDTO);
         model.addAttribute("tests", testDTOS);
         model.addAttribute("testRunning", RunTestService.testRunning);
         return "index";
     }
 
-    @GetMapping("/cleanDB")
-    public String cleanDB(Model model) {
-        stockExchangeTimeDataRepository.deleteAll();
-        stockExchangeCpuDataRepository.deleteAll();
-        testRepository.deleteAll();
+    @GetMapping("/cleanTrafficDB")
+    public String cleanTrafficDB() throws Exception {
+        schemaHandler.execute();
         return "redirect:/index";
+    }
+
+    @GetMapping("/cleanStockDB")
+    public String cleanStockDB() {
+        clearStockDB();
+        return "redirect:/index";
+    }
+
+    public void clearStockDB() {
+        log.info("Clearing stock database");
+        this.rabbitTemplate.convertAndSend("trade-request-exchange", "foo.bar.#", "1");
     }
 
     @GetMapping("/setconf")
@@ -79,9 +97,6 @@ public class RunTestDTOController {
 
     @PostMapping("/postconf")
     public String postConf(@Valid RunTestDTO runTestDTO, BindingResult bindingResult) {
-        if(runTestDTO.getFirst() + runTestDTO.getSecond() + runTestDTO.getThird() != runTestDTO.getNumberOfUsers()){
-            bindingResult.addError(new FieldError("runTestDTO", "first", "First + second + third != users"));
-        }
         if(!runTestDTO.isRequestLimit() && !runTestDTO.isTimeLimit()) {
             bindingResult.addError(new FieldError("runTestDTO", "timeLimit", "At least one limiter is required"));
         }
@@ -148,13 +163,21 @@ public class RunTestDTOController {
 
     private void getMethodsTimeData(HttpServletResponse response, Test test) throws IOException {
         ICsvBeanWriter csvWriter = new CsvBeanWriter(response.getWriter(), CsvPreference.STANDARD_PREFERENCE);
-        String[] csvHeader = {"timestamp", "applicationTime", "databaseTime", "method", "endpointUrl", "replicaId"};
-        String[] nameMapping = {"timestamp", "applicationTime", "databaseTime", "method", "endpointUrl", "stockId"};
+        String[] csvHeader = {"timestamp", "apiTime", "applicationTime", "databaseTime",  "endpointUrl", "queueSizeForward", "queueSizeBack", "replicaId"};
+        String[] nameMapping = {"timestamp", "apiTime", "applicationTime", "databaseTime",  "endpointUrl", "queueSizeForward", "queueSizeBack", "stockId"};
         csvWriter.writeHeader(csvHeader);
-        List<TrafficGeneratorTimeData> list = trafficGeneratorTimeDataRepository.findAllByTest(test);
-        for(TrafficGeneratorTimeData data : list) {
-            csvWriter.write(data, nameMapping);
-        }
+        List<TrafficGeneratorTimeData> list;
+        int pageSize = 1000;
+        int currentPage = 0;
+        do {
+            Pageable pageable = PageRequest.of(currentPage, pageSize);
+            Page<TrafficGeneratorTimeData> page = trafficGeneratorTimeDataRepository.findAllByTest(pageable, test);
+            list = page.getContent();
+            for (TrafficGeneratorTimeData data : list) {
+                csvWriter.write(data, nameMapping);
+            }
+            currentPage++;
+        } while (list.size() == 1000);
         csvWriter.close();
     }
 
@@ -163,34 +186,59 @@ public class RunTestDTOController {
         String[] csvHeader = {"timestamp", "applicationTime", "databaseTime", "numberOfSellOffers", "numberOfBuyOffers", "replicaId"};
         String[] nameMapping = {"timestamp", "applicationTime", "databaseTime", "numberOfSellOffers", "numberOfBuyOffers", "stockId"};
         csvWriter.writeHeader(csvHeader);
-        List<StockExchangeTimeData> list = stockExchangeTimeDataRepository.findAllByTest(test);
-        for(StockExchangeTimeData data : list) {
-            csvWriter.write(data, nameMapping);
-        }
+        List<StockExchangeTimeData> list;
+        int pageSize = 1000;
+        int currentPage = 0;
+        do {
+            Pageable pageable = PageRequest.of(currentPage, pageSize);
+            Page<StockExchangeTimeData> page = stockExchangeTimeDataRepository.findAllByTest(pageable, test);
+            list = page.getContent();
+            for (StockExchangeTimeData data : list) {
+                csvWriter.write(data, nameMapping);
+            }
+            currentPage++;
+        } while (list.size() == 1000);
         csvWriter.close();
     }
 
     private void getStockCpuData(HttpServletResponse response, Test test) throws IOException {
         ICsvBeanWriter csvWriter = new CsvBeanWriter(response.getWriter(), CsvPreference.STANDARD_PREFERENCE);
-        String[] csvHeader = {"timestamp", "cpuUsage", "replicaId"};
-        String[] nameMapping = {"timestamp", "cpuUsage", "stockId"};
+        String[] csvHeader = {"timestamp", "cpuUsage", "memoryUsage", "replicaId"};
+        String[] nameMapping = {"timestamp", "cpuUsage", "memory", "stockId"};
         csvWriter.writeHeader(csvHeader);
-        List<StockExchangeCpuData> list = stockExchangeCpuDataRepository.findAllByTest(test);
-        for(StockExchangeCpuData data : list) {
-            csvWriter.write(data, nameMapping);
-        }
+        List<StockExchangeCpuData> list;
+        int pageSize = 1000;
+        int currentPage = 0;
+        do {
+            Pageable pageable = PageRequest.of(currentPage, pageSize);
+            Page<StockExchangeCpuData> page = stockExchangeCpuDataRepository.findAllByTest(pageable, test);
+            list = page.getContent();
+            for (StockExchangeCpuData data : list) {
+                csvWriter.write(data, nameMapping);
+            }
+            currentPage++;
+        } while (list.size() == 1000);
+
         csvWriter.close();
     }
 
     private void getTrafficCpuData(HttpServletResponse response, Test test) throws IOException {
         ICsvBeanWriter csvWriter = new CsvBeanWriter(response.getWriter(), CsvPreference.STANDARD_PREFERENCE);
-        String[] csvHeader = {"timestamp", "cpuUsage"};
-        String[] nameMapping = {"timestamp", "cpuUsage"};
+        String[] csvHeader = {"timestamp", "cpuUsage", "memoryUsage"};
+        String[] nameMapping = {"timestamp", "cpuUsage", "memory"};
         csvWriter.writeHeader(csvHeader);
-        List<TrafficGeneratorCpuData> list = trafficGeneratorCpuDataRepository.findAllByTest(test);
-        for(TrafficGeneratorCpuData data : list) {
-            csvWriter.write(data, nameMapping);
-        }
+        List<TrafficGeneratorCpuData> list;
+        int pageSize = 1000;
+        int currentPage = 0;
+        do {
+            Pageable pageable = PageRequest.of(currentPage, pageSize);
+            Page<TrafficGeneratorCpuData> page = trafficGeneratorCpuDataRepository.findAllByTest(pageable, test);
+            list = page.getContent();
+            for (TrafficGeneratorCpuData data : list) {
+                csvWriter.write(data, nameMapping);
+            }
+            currentPage++;
+        } while (list.size() == 1000);
         csvWriter.close();
     }
 }

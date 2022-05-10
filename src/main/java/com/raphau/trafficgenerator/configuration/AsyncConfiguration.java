@@ -67,11 +67,6 @@ public class AsyncConfiguration {
     }
 
     @Bean
-    Queue queueTimeData() {
-        return new Queue("time-data-request", false);
-    }
-
-    @Bean
     Queue queueUserData() {
         return new Queue("user-data-request", false);
     }

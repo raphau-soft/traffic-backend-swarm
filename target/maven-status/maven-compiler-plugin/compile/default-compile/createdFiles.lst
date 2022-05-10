@@ -2,10 +2,13 @@ com\raphau\trafficgenerator\entity\StockExchangeCpuData.class
 com\raphau\trafficgenerator\configuration\UnixEpochDateTypeAdapter.class
 com\raphau\trafficgenerator\dto\TestDetailsDTO.class
 com\raphau\trafficgenerator\service\AsyncService$4.class
+META-INF\spring-configuration-metadata.json
 com\raphau\trafficgenerator\dao\TrafficGeneratorCpuDataRepository.class
+com\raphau\trafficgenerator\configuration\TradingConfiguration.class
 com\raphau\trafficgenerator\configuration\AsyncConfiguration.class
 com\raphau\trafficgenerator\service\AsyncService$7.class
 com\raphau\trafficgenerator\dao\TestParametersRepository.class
+com\raphau\trafficgenerator\dto\GetDataDTO.class
 com\raphau\trafficgenerator\dto\ClientTestDTO.class
 com\raphau\trafficgenerator\entity\Test.class
 com\raphau\trafficgenerator\dto\StockRate.class
@@ -13,11 +16,13 @@ com\raphau\trafficgenerator\TrafficGeneratorApplication.class
 com\raphau\trafficgenerator\dto\CompanyDTO.class
 com\raphau\trafficgenerator\entity\TrafficGeneratorCpuData.class
 com\raphau\trafficgenerator\dto\Stock.class
+com\raphau\trafficgenerator\configuration\SchemaHandler.class
 com\raphau\trafficgenerator\service\AsyncService$3.class
 com\raphau\trafficgenerator\entity\StockExchangeTimeData.class
 com\raphau\trafficgenerator\controller\TestController.class
 com\raphau\trafficgenerator\dto\SellOffer.class
 com\raphau\trafficgenerator\entity\TestParameters.class
+com\raphau\trafficgenerator\configuration\SpringContextGetter.class
 com\raphau\trafficgenerator\dao\StockExchangeCpuDataRepository.class
 com\raphau\trafficgenerator\controller\RunTestDTOController.class
 com\raphau\trafficgenerator\service\AsyncService$6.class

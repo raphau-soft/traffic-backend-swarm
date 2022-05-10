@@ -22,17 +22,17 @@
                         <span th:if="${#fields.hasErrors('timeBetweenRequests')}" th:errors="*{timeBetweenRequests}" class="text-danger"></span>
                     </div>
                     <div class="form-group col-md-12">
-                        <label for="numberOfUsers" class="col-form-label">Number of users</label>
-                        <input value="${runTestDTO.getNumberOfUsers()}" type="number" th:field="*{numberOfUsers}" class="form-control" id="numberOfUsers" placeholder="Number of users">
-                        <span th:if="${#fields.hasErrors('numberOfUsers')}" th:errors="*{numberOfUsers}" class="text-danger"></span>
-                    </div>
-                    <div class="form-group col-md-12">
                         <label for="testTime" class="col-form-label">Time of test (s)</label>
                         <input value="${runTestDTO.getTestTime()}" type="number" th:field="*{testTime}" class="form-control" id="testTime" placeholder="Time of test">
                         <span th:if="${#fields.hasErrors('testTime')}" th:errors="*{testTime}" class="text-danger"></span>
                     </div>
                     <div class="form-group col-md-12">
-                        <label for="requestsNumber" class="col-form-label">Number of requests</label>
+                        <label for="testTime" class="col-form-label">The break between trades (s)</label>
+                        <input value="${runTestDTO.getBreakBetweenTrades()}" type="number" th:field="*{breakBetweenTrades}" class="form-control" id="breakBetweenTrades" placeholder="The break between trades">
+                        <span th:if="${#fields.hasErrors('testTime')}" th:errors="*{breakBetweenTrades}" class="text-danger"></span>
+                    </div>
+                    <div class="form-group col-md-12">
+                        <label for="requestsNumber" class="col-form-label">Number of requests per user</label>
                         <input value="${runTestDTO.getRequestsNumber()}" type="number" th:field="*{requestsNumber}" class="form-control" id="requestsNumber" placeholder="Number of requests">
                         <span th:if="${#fields.hasErrors('requestsNumber')}" th:errors="*{requestsNumber}" class="text-danger"></span>
                     </div>
