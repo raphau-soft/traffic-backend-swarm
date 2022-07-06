@@ -1,4 +1,5 @@
 com\raphau\trafficgenerator\entity\StockExchangeCpuData.class
+com\raphau\trafficgenerator\service\AsyncService$10.class
 com\raphau\trafficgenerator\configuration\UnixEpochDateTypeAdapter.class
 com\raphau\trafficgenerator\dto\TestDetailsDTO.class
 com\raphau\trafficgenerator\service\AsyncService$4.class

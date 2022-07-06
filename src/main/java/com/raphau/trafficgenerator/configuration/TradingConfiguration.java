@@ -36,6 +36,8 @@ public class TradingConfiguration implements SchedulingConfigurer {
 
     @Autowired
     private AsyncService asyncService;
+    @Autowired
+    private RunTestService runTestService;
 
     @Autowired
     private RabbitAdmin admin;
@@ -63,6 +65,12 @@ public class TradingConfiguration implements SchedulingConfigurer {
                         }
                         messageCount = getMessageCount();
                         log.info("Offers while processing: " + messageCount);
+                        try {
+                            runTestService.checkTestStatus();
+                            if (!RunTestService.testRunning || asyncService.isEndWork()) return;
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                     }
                     try {
                         Thread.sleep(10000);
@@ -78,7 +86,7 @@ public class TradingConfiguration implements SchedulingConfigurer {
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        if (validate != RunTestService.validator) {
+                        if (validate < RunTestService.validator - 1 || validate > RunTestService.validator + 1) {
                             AsyncService.trading = false;
                             log.info("Stock exchange failed to send confirmation, continuing...");
                         }

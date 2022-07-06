@@ -4,7 +4,9 @@ import com.raphau.trafficgenerator.dao.StockExchangeCpuDataRepository;
 import com.raphau.trafficgenerator.dao.StockExchangeTimeDataRepository;
 import com.raphau.trafficgenerator.dao.TestRepository;
 import com.raphau.trafficgenerator.dao.TrafficGeneratorTimeDataRepository;
-import com.raphau.trafficgenerator.dto.*;
+import com.raphau.trafficgenerator.dto.CpuDataDTO;
+import com.raphau.trafficgenerator.dto.TimeDataDTO;
+import com.raphau.trafficgenerator.dto.TrafficGeneratorTimeDataDTO;
 import com.raphau.trafficgenerator.entity.StockExchangeCpuData;
 import com.raphau.trafficgenerator.entity.StockExchangeTimeData;
 import com.raphau.trafficgenerator.entity.Test;
@@ -42,54 +44,71 @@ public class Receiver {
     @RabbitListener(queues = "test-details-response")
     @Transactional
     public void receiveOfferMessage(TrafficGeneratorTimeDataDTO trafficGeneratorTimeDataDTO) {
-        Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
-        TrafficGeneratorTimeData trafficGeneratorTimeData = trafficGeneratorTimeDataRepository.getOne(trafficGeneratorTimeDataDTO.getId());
-        trafficGeneratorTimeData.updateWithDTO(trafficGeneratorTimeData, trafficGeneratorTimeDataDTO, test);
-        trafficGeneratorTimeDataRepository.save(trafficGeneratorTimeData);
+        try {
+            Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
+            TrafficGeneratorTimeData trafficGeneratorTimeData = trafficGeneratorTimeDataRepository.getOne(trafficGeneratorTimeDataDTO.getId());
+            trafficGeneratorTimeData.updateWithDTO(trafficGeneratorTimeData, trafficGeneratorTimeDataDTO, test);
+            trafficGeneratorTimeDataRepository.save(trafficGeneratorTimeData);
+        } catch (NullPointerException ignored) {
+
+        }
     }
 
     @RabbitListener(queues = "cpu-data-request")
     public void receiveCpuDataMessage(CpuDataDTO cpuDataDTO) {
-        if(!RunTestService.testRunning) return;
-        Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
-        StockExchangeCpuData stockExchangeCpuData = new StockExchangeCpuData(cpuDataDTO, test);
-        stockExchangeCpuDataRepository.save(stockExchangeCpuData);
+        if (!RunTestService.testRunning) return;
+        try {
+            Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
+            StockExchangeCpuData stockExchangeCpuData = new StockExchangeCpuData(cpuDataDTO, test);
+            stockExchangeCpuDataRepository.save(stockExchangeCpuData);
+        } catch (NullPointerException ignored) {
+
+        }
     }
 
     @RabbitListener(queues = "stock-data-response")
     public void receiveStockDataMessage(Map<String, Object> objects) {
         int user = Integer.parseInt((String) objects.get("username"));
-        asyncService.getStockData().set(user, new JSONObject(objects));
-        AsyncService.semaphores.get(user).release();
+        try {
+            asyncService.getStockData().set(user, new JSONObject(objects));
+            AsyncService.semaphores.get(user).release();
+        } catch (NullPointerException ignored) {
+            AsyncService.semaphores.get(user).release();
+        }
     }
 
     @RabbitListener(queues = "user-data-response")
     public void receiveUserDataMessage(Map<String, Object> objects) {
         int user = Integer.parseInt((String) objects.get("username"));
-        asyncService.getUsersAndCompanies().set(user, new JSONObject(objects));
-        AsyncService.semaphores.get(user).release();
+        try {
+            asyncService.getUsersAndCompanies().set(user, new JSONObject(objects));
+            AsyncService.semaphores.get(user).release();
+        } catch (NullPointerException ignored) {
+            AsyncService.semaphores.get(user).release();
+        }
     }
 
     @RabbitListener(queues = "register-response")
     public void receiveRegisterMessage(String flag) {
-        if(flag.equals("0")) {
+        if (flag.equals("0")) {
             RunTestService.registered++;
-            RunTestService.register.release();
         }
-        if(flag.equals("1")) {
+        if (flag.equals("1")) {
             RunTestService.validator++;
         }
     }
 
     @RabbitListener(queues = "trade-response")
     public void receiveTradeMessage(TimeDataDTO timeDataDTO) {
-        if(timeDataDTO.getTimestamp() != 0) {
+        logger.info("Trade response");
+        if (timeDataDTO.getTimestamp() != 0) {
             logger.info("Received trade time response " + timeDataDTO);
             AsyncService.trading = false;
             Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
             StockExchangeTimeData stockExchangeTimeData = new StockExchangeTimeData(timeDataDTO, test);
             stockExchangeTimeDataRepository.save(stockExchangeTimeData);
         } else {
+            logger.info("Trade response: " + timeDataDTO);
             RunTestService.register.release();
         }
     }

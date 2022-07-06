@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import org.springframework.web.client.RestTemplate;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.spi.DocumentationType;
@@ -173,7 +174,7 @@ public class AsyncConfiguration {
 
     @Bean
     Binding bindingBuyOffer(Queue queueRequestBuyOffer, TopicExchange exchangeBuyOffer) {
-        return BindingBuilder.bind(queueRequestBuyOffer).to(exchangeBuyOffer).with("foo.bar.#");
+        return BindingBuilder.bind(queueRequestBuyOffer).to(exchangeBuyOffer).with("buy-offer-key");
     }
 
     @Bean
@@ -252,17 +253,24 @@ public class AsyncConfiguration {
     @Bean(name = "asyncExecutor")
     public Executor asyncExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(100);
-        executor.setMaxPoolSize(100);
-        executor.setQueueCapacity(200);
+        executor.setCorePoolSize(100000);
+        executor.setMaxPoolSize(100000);
+        executor.setQueueCapacity(200000);
         executor.setThreadNamePrefix("AsyncThread-");
         executor.initialize();
         return executor;
     }
 
     @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+
+    @Bean
     public ConnectionFactory connectionFactory() {
-        return new CachingConnectionFactory("rabbitmq");
+        CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory("rabbitmq");
+        cachingConnectionFactory.setChannelCacheSize(1000000);
+        return cachingConnectionFactory;
     }
 
 //    @Bean

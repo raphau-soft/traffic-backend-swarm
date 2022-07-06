@@ -32,6 +32,11 @@ public class TestController {
         runTestService.stopTest();
     }
 
+    @GetMapping("/url")
+    public void setUrl(@RequestBody String url) {
+        RunTestService.url = url;
+    }
+
 }
 
 

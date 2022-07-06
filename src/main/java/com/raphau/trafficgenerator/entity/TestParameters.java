@@ -57,6 +57,7 @@ public class TestParameters {
     	this.third = runTestDTO.getThird();
     	this.requestLimit = runTestDTO.isRequestLimit();
     	this.timeLimit = runTestDTO.isTimeLimit();
+		this.breakBetweenTrades = runTestDTO.getBreakBetweenTrades();
     }
 
 	public TestParameters(int id, Test test, int number_of_requests, int number_of_users, int test_time,

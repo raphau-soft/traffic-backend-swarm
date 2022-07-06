@@ -14,16 +14,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -44,6 +41,7 @@ public class RunTestService {
     public static TestDTO testDTO;
     public static int registered;
     public static int validator;
+    public static String url = "http://localhost:15672/api/queues/";
 
     @Autowired
     private AsyncService asyncService;
@@ -99,8 +97,17 @@ public class RunTestService {
             semaphores.add(new Semaphore(1));
             try {
                 asyncService.postRegistration("" + i);
+                log.info("User " + i + " registered");
             } catch (InterruptedException e) {
                 return;
+            }
+        }
+
+        while (registered < numberOfUsers) {
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
 
@@ -122,7 +129,9 @@ public class RunTestService {
             try {
                 asyncService.runTests("" + i, runTestDTO, 1);
                 processNumber++;
+                log.info("User " + i + " started");
             } catch (Exception e) {
+                e.printStackTrace();
                 log.info("User " + i + " failed to start");
             }
         }
@@ -130,7 +139,9 @@ public class RunTestService {
             try {
                 asyncService.runTests("" + i, runTestDTO, 2);
                 processNumber++;
+                log.info("User " + i + " started");
             } catch (Exception e) {
+                e.printStackTrace();
                 log.info("User " + i + " failed to start");
             }
         }
@@ -138,7 +149,9 @@ public class RunTestService {
             try {
                 asyncService.runTests("" + i, runTestDTO, 3);
                 processNumber++;
+                log.info("User " + i + " started");
             } catch (Exception e) {
+                e.printStackTrace();
                 log.info("User " + i + " failed to start");
             }
         }
@@ -148,8 +161,8 @@ public class RunTestService {
     @Scheduled(fixedDelay = 60000)
     @Transactional
     public void checkTestStatus() throws InterruptedException {
+        log.info(testRunning + " ");
         if (!testRunning) return;
-        collectCpuData();
         if (runTestDTO.isTimeLimit()) {
             ZoneId zoneId = ZoneId.systemDefault();
             long currentTime = new Date().getTime();
@@ -162,6 +175,8 @@ public class RunTestService {
         }
     }
 
+    @Scheduled(fixedDelay = 60000)
+    @Transactional
     public void collectCpuData() {
         double memoryUsage = ((double) Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / Runtime.getRuntime().totalMemory();
         for (Method method : bean.getClass().getDeclaredMethods()) {

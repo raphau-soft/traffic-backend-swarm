@@ -167,7 +167,7 @@ public class RunTestDTOController {
         String[] nameMapping = {"timestamp", "apiTime", "applicationTime", "databaseTime",  "endpointUrl", "queueSizeForward", "queueSizeBack", "stockId"};
         csvWriter.writeHeader(csvHeader);
         List<TrafficGeneratorTimeData> list;
-        int pageSize = 1000;
+        int pageSize = 10000;
         int currentPage = 0;
         do {
             Pageable pageable = PageRequest.of(currentPage, pageSize);
@@ -177,7 +177,7 @@ public class RunTestDTOController {
                 csvWriter.write(data, nameMapping);
             }
             currentPage++;
-        } while (list.size() == 1000);
+        } while (list.size() == 10000);
         csvWriter.close();
     }
 
@@ -187,7 +187,7 @@ public class RunTestDTOController {
         String[] nameMapping = {"timestamp", "applicationTime", "databaseTime", "numberOfSellOffers", "numberOfBuyOffers", "stockId"};
         csvWriter.writeHeader(csvHeader);
         List<StockExchangeTimeData> list;
-        int pageSize = 1000;
+        int pageSize = 10000;
         int currentPage = 0;
         do {
             Pageable pageable = PageRequest.of(currentPage, pageSize);
@@ -197,7 +197,7 @@ public class RunTestDTOController {
                 csvWriter.write(data, nameMapping);
             }
             currentPage++;
-        } while (list.size() == 1000);
+        } while (list.size() == 10000);
         csvWriter.close();
     }
 
@@ -207,7 +207,7 @@ public class RunTestDTOController {
         String[] nameMapping = {"timestamp", "cpuUsage", "memory", "stockId"};
         csvWriter.writeHeader(csvHeader);
         List<StockExchangeCpuData> list;
-        int pageSize = 1000;
+        int pageSize = 10000;
         int currentPage = 0;
         do {
             Pageable pageable = PageRequest.of(currentPage, pageSize);
@@ -217,7 +217,7 @@ public class RunTestDTOController {
                 csvWriter.write(data, nameMapping);
             }
             currentPage++;
-        } while (list.size() == 1000);
+        } while (list.size() == 10000);
 
         csvWriter.close();
     }
@@ -228,7 +228,7 @@ public class RunTestDTOController {
         String[] nameMapping = {"timestamp", "cpuUsage", "memory"};
         csvWriter.writeHeader(csvHeader);
         List<TrafficGeneratorCpuData> list;
-        int pageSize = 1000;
+        int pageSize = 10000;
         int currentPage = 0;
         do {
             Pageable pageable = PageRequest.of(currentPage, pageSize);
@@ -238,7 +238,7 @@ public class RunTestDTOController {
                 csvWriter.write(data, nameMapping);
             }
             currentPage++;
-        } while (list.size() == 1000);
+        } while (list.size() == 10000);
         csvWriter.close();
     }
 }
