@@ -178,6 +178,7 @@ public class RunTestService {
     @Scheduled(fixedDelay = 60000)
     @Transactional
     public void collectCpuData() {
+        if(!testRunning) return;
         double memoryUsage = ((double) Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / Runtime.getRuntime().totalMemory();
         for (Method method : bean.getClass().getDeclaredMethods()) {
             method.setAccessible(true);
