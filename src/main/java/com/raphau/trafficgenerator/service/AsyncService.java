@@ -570,17 +570,17 @@ public class AsyncService {
     }
 
     void createBuyOffer(String username, int companyId, int amount, double price) {
-        log.debug("User " + username + " sent create buy offer request");
+        log.info("User " + username + " sent create buy offer request");
         Test test = testRepository.findById(RunTestService.testDTO.getId()).get();
         QueueInformation information = admin.getQueueInfo("buy-offer-request");
         assert information != null;
         int unack = getUnack("buy-offer-request");
         TrafficGeneratorTimeData trafficGeneratorTimeData = new TrafficGeneratorTimeData(0, test, System.currentTimeMillis(), null, null, System.currentTimeMillis(), information.getMessageCount() + unack, "add-buy-offer");
-        trafficGeneratorTimeDataRepository.saveAndFlush(trafficGeneratorTimeData);
         try {
+            trafficGeneratorTimeDataRepository.saveAndFlush(trafficGeneratorTimeData);
             this.rabbitTemplate.convertAndSend("buy-offer-exchange", "foo.bar.#", new BuyOfferDTO(0, username, companyId, BigDecimal.valueOf(price), amount, new Date(), trafficGeneratorTimeData.getId()));
         } catch (AmqpResourceNotAvailableException e) {
-            log.debug("User " + username + " channel is full");
+            log.info("User " + username + " channel is full");
         }
     }
 
@@ -591,11 +591,11 @@ public class AsyncService {
         assert information != null;
         int unack = getUnack("sell-offer-request");
         TrafficGeneratorTimeData trafficGeneratorTimeData = new TrafficGeneratorTimeData(0, test, System.currentTimeMillis(), null, null, System.currentTimeMillis(), information.getMessageCount() + unack, "add-sell-offer");
-        trafficGeneratorTimeDataRepository.saveAndFlush(trafficGeneratorTimeData);
         try {
+            trafficGeneratorTimeDataRepository.saveAndFlush(trafficGeneratorTimeData);
             this.rabbitTemplate.convertAndSend("sell-offer-exchange", "foo.bar.#", new SellOfferDTO(0, username, companyId, BigDecimal.valueOf(price), amount, new Date(), trafficGeneratorTimeData.getId()));
         } catch (AmqpResourceNotAvailableException e) {
-            log.debug("User " + username + " channel is full");
+            log.info("User " + username + " channel is full");
         }
     }
 

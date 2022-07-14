@@ -174,7 +174,7 @@ public class AsyncConfiguration {
 
     @Bean
     Binding bindingBuyOffer(Queue queueRequestBuyOffer, TopicExchange exchangeBuyOffer) {
-        return BindingBuilder.bind(queueRequestBuyOffer).to(exchangeBuyOffer).with("buy-offer-key");
+        return BindingBuilder.bind(queueRequestBuyOffer).to(exchangeBuyOffer).with("foo.bar.#");
     }
 
     @Bean
